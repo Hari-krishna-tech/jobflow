@@ -100,7 +100,6 @@ Rules:
           content: prompt,
         },
       ],
-      response_format: { type: "json_object" },
     }),
   });
 
@@ -193,7 +192,6 @@ Rules:
           content: truncatedDescription,
         },
       ],
-      response_format: { type: "json_object" },
     }),
   });
 

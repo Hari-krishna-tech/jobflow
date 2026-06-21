@@ -24,5 +24,5 @@ export default auth;
 export const config = {
   // Skip Next internals, the Auth.js handler, and static assets.
   // Auth callback routes (/api/auth/*) are handled by NextAuth itself.
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|manifest\\.json|logo\\.svg).*)"],
 };
