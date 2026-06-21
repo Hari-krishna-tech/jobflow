@@ -14,6 +14,28 @@ const classificationSchema = z.object({
 export type EmailClassification = z.infer<typeof classificationSchema>;
 
 /**
+ * Cleans and parses JSON responses from the LLM, handling double-serialization.
+ */
+function parseLLMResponse(rawContent: string): any {
+  let cleaned = rawContent.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+  }
+
+  let parsed = JSON.parse(cleaned);
+  if (typeof parsed === "string") {
+    const trimmed = parsed.trim();
+    if (
+      (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+      (trimmed.startsWith("[") && trimmed.endsWith("]"))
+    ) {
+      parsed = JSON.parse(trimmed);
+    }
+  }
+  return parsed;
+}
+
+/**
  * Classifies email content using OpenRouter and the configured model.
  * Returns a validated and structured classification.
  */
@@ -94,20 +116,11 @@ Rules:
     throw new Error("Empty response from OpenRouter");
   }
 
-  // Handle cases where the LLM might wrap the JSON output in markdown backticks anyway
-  let cleanedContent = rawContent.trim();
-  if (cleanedContent.startsWith("```")) {
-    cleanedContent = cleanedContent.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
-  }
-
   try {
-    let parsed = JSON.parse(cleanedContent);
-    if (typeof parsed === "string") {
-      parsed = JSON.parse(parsed);
-    }
+    const parsed = parseLLMResponse(rawContent);
     return classificationSchema.parse(parsed);
   } catch (parseError) {
-    console.error("Failed to parse AI classification content:", cleanedContent);
+    console.error("Failed to parse AI classification content:", rawContent);
     throw new Error(`Invalid JSON or schema from AI: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
   }
 }
@@ -192,20 +205,11 @@ Rules:
     throw new Error("Empty response from OpenRouter");
   }
 
-  // Handle cases where the LLM might wrap the JSON output in markdown backticks anyway
-  let cleanedContent = rawContent.trim();
-  if (cleanedContent.startsWith("```")) {
-    cleanedContent = cleanedContent.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
-  }
-
   try {
-    let parsed = JSON.parse(cleanedContent);
-    if (typeof parsed === "string") {
-      parsed = JSON.parse(parsed);
-    }
+    const parsed = parseLLMResponse(rawContent);
     return jobParsingSchema.parse(parsed);
   } catch (parseError) {
-    console.error("Failed to parse AI job description parsing content:", cleanedContent);
+    console.error("Failed to parse AI job description parsing content:", rawContent);
     throw new Error(`Invalid JSON or schema from AI: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
   }
 }

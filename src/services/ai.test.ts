@@ -227,6 +227,27 @@ describe("ai service", () => {
       expect(result.position).toBe("Software Engineer");
     });
 
+    it("should throw validation error if LLM returns a plain string wrapped in JSON instead of an object", async () => {
+      const mockApiResponse = {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify("display_name"),
+            },
+          },
+        ],
+      };
+
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => mockApiResponse,
+      } as any);
+
+      await expect(
+        parseJobDescription("Software Engineer at Google...")
+      ).rejects.toThrow("Invalid JSON or schema from AI: [");
+    });
+
     it("should throw error if fetch response is not ok", async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: false,
