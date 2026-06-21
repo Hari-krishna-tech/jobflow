@@ -1,0 +1,114 @@
+// JobFlow — Prisma schema
+// Source: PLAN.html §05 (Database Schema)
+// Four core entities: User, Job, Email, Task.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URL lives in prisma.config.ts (Prisma 7).
+}
+
+/// Lifecycle of a job application. One controlled vocabulary shared across
+/// jobs, emails, and AI classifier output. Never free-text a status.
+enum JobStatus {
+  APPLIED
+  ASSESSMENT
+  INTERVIEW
+  HR_ROUND
+  OFFER
+  REJECTED
+  GHOSTED
+}
+
+/// Where a Task came from. `email` = auto-created by AI from a synced email;
+/// `manual` = created by the user.
+enum TaskSource {
+  EMAIL
+  MANUAL
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String?
+  /// Gmail OAuth refresh token, encrypted at rest (TOKEN_ENCRYPTION_KEY).
+  refresh_token String?
+  /// Short-lived Gmail access token, auto-refreshed by the Gmail service.
+  access_token  String?
+  last_sync_at  DateTime?
+  createdAt    DateTime  @default(now())
+
+  jobs   Job[]
+  emails Email[]
+  tasks  Task[]
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  company     String
+  position    String
+  location    String?
+  jobUrl      String?
+  salary      String?
+  appliedDate DateTime?
+  status      JobStatus @default(APPLIED)
+  notes       String?
+  /// Optional CRM field — recruiter name / contact.
+  recruiter   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  emails Email[]
+  tasks  Task[]
+
+  @@index([userId, status])
+}
+
+model Email {
+  id              String     @id @default(cuid())
+  /// Nullable until matched to a Job by company fuzzy match. Set null on job
+  /// delete (don't lose the email record) rather than cascading.
+  job             Job?       @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  jobId           String?
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  /// Idempotency key — re-syncs never duplicate.
+  gmailMessageId  String     @unique
+  subject         String
+  fromEmail       String
+  receivedAt      DateTime
+  /// AI-generated one-line summary.
+  summary         String?
+  /// AI-extracted next step, if any.
+  actionRequired  String?
+  /// AI-extracted due date/deadline for the action item, if any.
+  actionDueDate   DateTime?
+  /// AI-suggested status; applied to the Job only after company match.
+  detectedStatus  JobStatus?
+  createdAt       DateTime   @default(now())
+
+  @@index([userId, receivedAt])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  /// Nullable so a task can survive its job being deleted.
+  job         Job?       @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  jobId       String?
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  title       String
+  description String?
+  dueDate     DateTime?
+  completed   Boolean    @default(false)
+  source      TaskSource @default(MANUAL)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userId, completed])
+}

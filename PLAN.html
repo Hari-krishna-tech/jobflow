@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JobFlow — Project Plan</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --bg-soft: #111113;
+    --card: #151518;
+    --card-hover: #1a1a1f;
+    --border: #26262c;
+    --border-soft: #1e1e24;
+    --text: #ededf0;
+    --text-dim: #a1a1aa;
+    --text-faint: #6b6b75;
+    --accent: #6366f1;
+    --accent-soft: #818cf8;
+    --accent-bg: rgba(99, 102, 241, 0.12);
+    --green: #22c55e;
+    --green-bg: rgba(34, 197, 94, 0.12);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245, 158, 11, 0.12);
+    --red: #ef4444;
+    --red-bg: rgba(239, 68, 68, 0.12);
+    --cyan: #06b6d4;
+    --pink: #ec4899;
+    --radius: 12px;
+    --mono: "SF Mono", "JetBrains Mono", "Fira Code", ui-monospace, Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* layout */
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    background: var(--bg-soft);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 28px 18px;
+  }
+
+  .sidebar .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .sidebar .logo {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--pink));
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 16px; color: white;
+  }
+
+  .sidebar .brand-name { font-weight: 700; font-size: 16px; }
+  .sidebar .brand-sub { font-size: 11px; color: var(--text-faint); }
+
+  .nav-section { margin-bottom: 22px; }
+  .nav-section h4 {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+    padding-left: 10px;
+    font-weight: 600;
+  }
+
+  .nav-section a {
+    display: block;
+    padding: 7px 10px;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 13.5px;
+    border-radius: 7px;
+    transition: all 0.15s;
+  }
+  .nav-section a:hover { background: var(--card); color: var(--text); }
+
+  .main {
+    flex: 1;
+    max-width: 980px;
+    padding: 48px 56px 120px;
+  }
+
+  /* hero */
+  .hero {
+    background: linear-gradient(135deg, var(--card), var(--bg-soft));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, var(--accent-bg), transparent 70%);
+    pointer-events: none;
+  }
+  .hero .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-bg);
+    color: var(--accent-soft);
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+  }
+  .hero h1 {
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin-bottom: 12px;
+    line-height: 1.1;
+  }
+  .hero p { color: var(--text-dim); font-size: 16px; max-width: 640px; }
+
+  .hero-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .hero-meta div { font-size: 13px; }
+  .hero-meta .k { color: var(--text-faint); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .hero-meta .v { color: var(--text); font-weight: 600; }
+
+  /* sections */
+  section { margin-bottom: 56px; scroll-margin-top: 24px; }
+  .section-head { margin-bottom: 22px; }
+  .section-head .num {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent-soft);
+    background: var(--accent-bg);
+    padding: 2px 8px;
+    border-radius: 5px;
+    margin-bottom: 8px;
+  }
+  h2 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  h2 + p { color: var(--text-dim); font-size: 14.5px; }
+  h3 { font-size: 17px; font-weight: 650; margin: 24px 0 12px; }
+
+  p { margin-bottom: 12px; color: var(--text); }
+  p.text-dim { color: var(--text-dim); }
+
+  /* callouts */
+  .callout {
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin: 16px 0;
+    border: 1px solid;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .callout .icon { font-size: 16px; line-height: 1.6; flex-shrink: 0; }
+  .callout .body { font-size: 14px; }
+  .callout .body strong { display: block; margin-bottom: 2px; }
+  .callout.info { background: var(--accent-bg); border-color: rgba(99,102,241,0.3); }
+  .callout.info .icon { color: var(--accent-soft); }
+  .callout.warn { background: var(--amber-bg); border-color: rgba(245,158,11,0.3); }
+  .callout.warn .icon { color: var(--amber); }
+  .callout.tip { background: var(--green-bg); border-color: rgba(34,197,94,0.3); }
+  .callout.tip .icon { color: var(--green); }
+
+  /* cards grid */
+  .grid { display: grid; gap: 14px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 760px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .main { padding: 32px 20px 80px; }
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .card:hover { border-color: var(--border-soft); }
+
+  .card .head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .card .emoji { font-size: 18px; }
+  .card .title { font-weight: 650; font-size: 14.5px; }
+  .card .desc { color: var(--text-dim); font-size: 13px; line-height: 1.55; }
+  .card .badge {
+    margin-left: auto;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .badge.green { background: var(--green-bg); color: var(--green); }
+  .badge.amber { background: var(--amber-bg); color: var(--amber); }
+  .badge.accent { background: var(--accent-bg); color: var(--accent-soft); }
+
+  /* stack list */
+  .stack-list { list-style: none; }
+  .stack-list li {
+    display: flex;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-soft);
+    align-items: flex-start;
+  }
+  .stack-list li:last-child { border-bottom: none; }
+  .stack-list .label {
+    width: 130px;
+    flex-shrink: 0;
+    font-weight: 600;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .stack-list .value { font-size: 14px; flex: 1; }
+  .stack-list .value .pill {
+    display: inline-block;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 2px 9px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: var(--mono);
+    margin: 2px 4px 2px 0;
+  }
+
+  /* code */
+  pre {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    margin: 14px 0;
+  }
+  code { font-family: var(--mono); font-size: 0.92em; }
+  :not(pre) > code {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 12.5px;
+    color: var(--accent-soft);
+  }
+  pre code { color: var(--text); }
+  .tok-key { color: var(--pink); }
+  .tok-str { color: var(--green); }
+  .tok-com { color: var(--text-faint); }
+  .tok-type { color: var(--cyan); }
+  .tok-num { color: var(--amber); }
+
+  /* table */
+  .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 14px 0;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td {
+    text-align: left;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  th {
+    background: var(--bg-soft);
+    color: var(--text-faint);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  tr:last-child td { border-bottom: none; }
+  td code { font-size: 12px; }
+  .type { color: var(--cyan); font-family: var(--mono); font-size: 12px; }
+  .pk { color: var(--amber); font-family: var(--mono); font-size: 10px; font-weight: 700; }
+
+  /* status pills */
+  .status-flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin: 14px 0;
+  }
+  .status-pill {
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+  .status-pill.applied { background: rgba(99,102,241,0.12); color: var(--accent-soft); border-color: rgba(99,102,241,0.3); }
+  .status-pill.assess { background: rgba(6,182,212,0.12); color: var(--cyan); border-color: rgba(6,182,212,0.3); }
+  .status-pill.interview { background: rgba(245,158,11,0.12); color: var(--amber); border-color: rgba(245,158,11,0.3); }
+  .status-pill.offer { background: rgba(34,197,94,0.12); color: var(--green); border-color: rgba(34,197,94,0.3); }
+  .status-pill.rejected { background: rgba(239,68,68,0.12); color: var(--red); border-color: rgba(239,68,68,0.3); }
+  .arrow { color: var(--text-faint); font-family: var(--mono); }
+
+  /* diagram */
+  .diagram {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+  .diagram .flow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .node {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 90px;
+  }
+  .node.accent { border-color: var(--accent); color: var(--accent-soft); }
+  .node.green { border-color: var(--green); color: var(--green); }
+  .node .sub { display: block; font-size: 10px; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
+  .connector { color: var(--text-faint); font-family: var(--mono); font-size: 18px; }
+
+  /* phases */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 9px; top: 8px; bottom: 8px;
+    width: 2px;
+    background: var(--border);
+  }
+  .phase {
+    position: relative;
+    padding-bottom: 26px;
+  }
+  .phase::before {
+    content: "";
+    position: absolute;
+    left: -24px; top: 4px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--accent);
+  }
+  .phase.mvp::before { border-color: var(--green); background: var(--green); }
+  .phase .ph-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .phase .ph-name { font-weight: 700; font-size: 15px; }
+  .phase .ph-label { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .ph-label.focus { background: var(--green-bg); color: var(--green); }
+  .ph-label.next { background: var(--accent-bg); color: var(--accent-soft); }
+  .ph-label.later { background: rgba(107,107,117,0.15); color: var(--text-faint); }
+  .phase ul { margin: 6px 0 0 16px; color: var(--text-dim); font-size: 13.5px; }
+  .phase ul li { margin-bottom: 3px; }
+
+  /* steps */
+  .steps { counter-reset: step; list-style: none; }
+  .steps li {
+    counter-increment: step;
+    padding: 14px 16px 14px 52px;
+    position: relative;
+    border-left: 2px solid var(--border);
+    margin-left: 16px;
+    margin-bottom: 4px;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: -15px; top: 12px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 700;
+    font-family: var(--mono);
+  }
+  .steps li strong { display: block; margin-bottom: 2px; }
+  .steps li .detail { color: var(--text-dim); font-size: 13px; }
+
+  /* api */
+  .api-row {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-soft);
+    align-items: center;
+  }
+  .method {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    padding: 4px 0;
+    border-radius: 6px;
+  }
+  .method.GET { background: var(--green-bg); color: var(--green); }
+  .method.POST { background: var(--accent-bg); color: var(--accent-soft); }
+  .method.PATCH { background: var(--amber-bg); color: var(--amber); }
+  .method.DELETE { background: var(--red-bg); color: var(--red); }
+  .api-path { font-family: var(--mono); font-size: 13px; }
+  .api-desc { color: var(--text-faint); font-size: 12px; }
+
+  /* folder tree */
+  .tree {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.85;
+    color: var(--text-dim);
+  }
+  .tree .dir { color: var(--accent-soft); font-weight: 600; }
+  .tree .file { color: var(--text); }
+  .tree .com { color: var(--text-faint); }
+
+  /* env */
+  .env-list { list-style: none; }
+  .env-list li {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 13px;
+  }
+  .env-list .key { font-family: var(--mono); color: var(--accent-soft); }
+  .env-list .desc { color: var(--text-dim); }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  .footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-faint);
+    font-size: 12.5px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">JF</div>
+      <div>
+        <div class="brand-name">JobFlow</div>
+        <div class="brand-sub">Project Plan</div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <h4>Overview</h4>
+      <a href="#vision">Product Vision</a>
+      <a href="#scope">Scope &amp; MVP</a>
+      <a href="#stack">Tech Stack</a>
+      <a href="#architecture">Architecture</a>
+    </div>
+
+    <div class="nav-section">
+      <h4>Design</h4>
+      <a href="#schema">Database Schema</a>
+      <a href="#status">Status Model</a>
+      <a href="#api">API Contracts</a>
+      <a href="#folders">Folder Structure</a>
+    </div>
+
+    <div class="nav-section">
+      <h4>Core Features</h4>
+      <a href="#auth">Authentication</a>
+      <a href="#gmail">Gmail Integration</a>
+      <a href="#ai-job">AI Job Parsing</a>
+      <a href="#ai-email">AI Email Classification</a>
+      <a href="#dashboard">Dashboard</a>
+    </div>
+
+    <div class="nav-section">
+      <h4>Execution</h4>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#steps">Implementation Order</a>
+      <a href="#env">Environment</a>
+      <a href="#deploy">Deployment</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="hero">
+      <span class="tag">● Project Plan — v1.0</span>
+      <h1>JobFlow</h1>
+      <p>A personal, AI-assisted job application tracker. Add jobs manually, let AI extract structure from pasted descriptions, connect Gmail, and automatically detect job-related emails — updating status and surfacing action items in one unified dashboard.</p>
+      <div class="hero-meta">
+        <div><span class="k">Type</span><span class="v">Solo developer / Portfolio</span></div>
+        <div><span class="k">Stack</span><span class="v">Next.js 15 · Prisma · Neon</span></div>
+        <div><span class="k">AI</span><span class="v">OpenRouter (Qwen 3)</span></div>
+        <div><span class="k">Hosting</span><span class="v">Vercel</span></div>
+      </div>
+    </div>
+
+    <!-- 1. VISION -->
+    <section id="vision">
+      <div class="section-head">
+        <span class="num">01</span>
+        <h2>Product Vision</h2>
+        <p>What JobFlow is, and why it matters.</p>
+      </div>
+
+      <p>Job tracking today is fragmented: jobs live in a spreadsheet, recruiter emails pile up in Gmail, and follow-ups (OAs, interviews, offers) slip through the cracks. JobFlow unifies these into a single source of truth — combining <strong>manual tracking</strong>, <strong>AI extraction</strong>, and <strong>automatic Gmail monitoring</strong> so a candidate never misses a follow-up.</p>
+
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="head"><span class="emoji">🗂️</span><span class="title">Track</span></div>
+          <p class="desc">Add and organize applications with full lifecycle status tracking.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">🤖</span><span class="title">Extract</span></div>
+          <p class="desc">Paste a job description and let AI autofill company, role, salary, location.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">📧</span><span class="title">Monitor</span></div>
+          <p class="desc">Connect Gmail; job emails are detected, classified, and matched to jobs.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">⚡</span><span class="title">Act</span></div>
+          <p class="desc">Action items are generated from emails — never miss an interview slot.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">📊</span><span class="title">Analyze</span></div>
+          <p class="desc">Conversion rates, response times, and company insights at a glance.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">👤</span><span class="title">Personal CRM</span></div>
+          <p class="desc">A recruiter and company memory that grows with your search.</p>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="icon">ℹ️</span>
+        <div class="body"><strong>Why this is a strong portfolio project</strong>It combines six real integrations (Gmail, OAuth, AI, DB, scheduling, analytics) into a cohesive product that solves a genuine personal pain point — and is realistic for a solo developer to ship.</div>
+      </div>
+    </section>
+
+    <!-- 2. SCOPE & MVP -->
+    <section id="scope">
+      <div class="section-head">
+        <span class="num">02</span>
+        <h2>Scope &amp; MVP Focus</h2>
+        <p>Ship the highest-value slice first.</p>
+      </div>
+
+      <div class="callout tip">
+        <span class="icon">★</span>
+        <div class="body"><strong>Recommended MVP</strong>Skip AI parsing of full job descriptions for v1. Focus on <strong>Gmail integration + email classification</strong> — that's the feature users value most, and it gets you to a usable product fastest.</div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="head"><span class="title">✅ In MVP</span><span class="badge green">P0</span></div>
+          <ul style="margin:8px 0 0 18px; color:var(--text-dim); font-size:13.5px;">
+            <li>Google authentication</li>
+            <li>Manual job CRUD</li>
+            <li>Dashboard with key stats</li>
+            <li>Gmail OAuth + connection</li>
+            <li>Email sync (polling on refresh)</li>
+            <li>AI email classification &amp; matching</li>
+            <li>Auto status updates &amp; tasks</li>
+            <li>Job detail timeline</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="head"><span class="title">🕒 Deferred</span><span class="badge amber">P1+</span></div>
+          <ul style="margin:8px 0 0 18px; color:var(--text-dim); font-size:13.5px;">
+            <li>AI paste-JD → autofill</li>
+            <li>Gmail Push (Pub/Sub)</li>
+            <li>Analytics &amp; success-rate charts</li>
+            <li>Company insights</li>
+            <li>Mobile / PWA</li>
+            <li>Multi-account Gmail</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. TECH STACK -->
+    <section id="stack">
+      <div class="section-head">
+        <span class="num">03</span>
+        <h2>Tech Stack</h2>
+        <p>A single-codebase Next.js app — no separate backend service required.</p>
+      </div>
+
+      <div class="card">
+        <ul class="stack-list">
+          <li>
+            <div class="label">Frontend</div>
+            <div class="value">
+              <span class="pill">Next.js 15</span><span class="pill">App Router</span><span class="pill">TypeScript</span><span class="pill">Tailwind CSS</span><span class="pill">shadcn/ui</span><span class="pill">TanStack Query</span>
+            </div>
+          </li>
+          <li>
+            <div class="label">Backend</div>
+            <div class="value">Next.js Route Handlers &amp; Server Actions — single codebase, Vercel-friendly.</div>
+          </li>
+          <li>
+            <div class="label">Database</div>
+            <div class="value">
+              PostgreSQL (local) → <span class="pill">Neon</span> (prod, serverless, free tier).
+            </div>
+          </li>
+          <li>
+            <div class="label">ORM</div>
+            <div class="value"><span class="pill">Prisma</span> with managed migrations.</div>
+          </li>
+          <li>
+            <div class="label">Auth</div>
+            <div class="value"><span class="pill">Auth.js</span> (Google OAuth). Stores Gmail refresh &amp; access tokens per user.</div>
+          </li>
+          <li>
+            <div class="label">AI</div>
+            <div class="value"><span class="pill">OpenRouter</span> · default <span class="pill">Qwen 3 8B</span> · structured JSON outputs. Fallback: <span class="pill">Gemma 3 12B</span>.</div>
+          </li>
+          <li>
+            <div class="label">Email</div>
+            <div class="value"><span class="pill">Gmail API</span> (read-only). Scopes: <code>gmail.readonly</code>, <code>openid</code>, <code>email</code>, <code>profile</code>.</div>
+          </li>
+          <li>
+            <div class="label">Validation</div>
+            <div class="value"><span class="pill">Zod</span> on every API boundary and Server Action.</div>
+          </li>
+          <li>
+            <div class="label">Hosting</div>
+            <div class="value"><span class="pill">Vercel</span> for app; <span class="pill">Neon</span> for DB; <span class="pill">Vercel Cron</span> for scheduled syncs.</div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 4. ARCHITECTURE -->
+    <section id="architecture">
+      <div class="section-head">
+        <span class="num">04</span>
+        <h2>Architecture</h2>
+        <p>Request &amp; sync flow through the system.</p>
+      </div>
+
+      <h3>High-level flow</h3>
+      <div class="diagram">
+        <div class="flow">
+          <div class="node">Browser<span class="sub">Next.js RSC + client</span></div>
+          <span class="connector">→</span>
+          <div class="node accent">Route Handler<span class="sub">/api/*</span></div>
+          <span class="connector">→</span>
+          <div class="node">Service Layer<span class="sub">repository pattern</span></div>
+          <span class="connector">→</span>
+          <div class="node green">Prisma<span class="sub">Neon Postgres</span></div>
+        </div>
+      </div>
+
+      <h3>Email sync flow (on dashboard refresh / cron)</h3>
+      <div class="diagram">
+        <div class="flow">
+          <div class="node">Gmail API<span class="sub">fetch last N</span></div>
+          <span class="connector">→</span>
+          <div class="node accent">AI Classifier<span class="sub">Qwen 3 8B</span></div>
+          <span class="connector">→</span>
+          <div class="node">Match Company<span class="sub">→ Job</span></div>
+          <span class="connector">→</span>
+          <div class="node">Update Status<span class="sub">+ create task</span></div>
+          <span class="connector">→</span>
+          <div class="node green">Store Email<span class="sub">Prisma</span></div>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="icon">⚙️</span>
+        <div class="body"><strong>Why polling over push?</strong>Option 1 (poll on refresh) is dramatically simpler for an MVP. Gmail Push via Pub/Sub is the production upgrade — covered in the roadmap but explicitly deferred.</div>
+      </div>
+    </section>
+
+    <!-- 5. DATABASE SCHEMA -->
+    <section id="schema">
+      <div class="section-head">
+        <span class="num">05</span>
+        <h2>Database Schema</h2>
+        <p>Four core entities: User, Job, Email, Task.</p>
+      </div>
+
+      <h3>User</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td><span class="type">String @id</span></td><td><span class="pk">PK</span> cuid</td></tr>
+            <tr><td><code>email</code></td><td><span class="type">String @unique</span></td><td>Google email</td></tr>
+            <tr><td><code>name</code></td><td><span class="type">String?</span></td><td>From profile</td></tr>
+            <tr><td><code>refresh_token</code></td><td><span class="type">String?</span></td><td>Gmail OAuth (encrypted)</td></tr>
+            <tr><td><code>access_token</code></td><td><span class="type">String?</span></td><td>Short-lived, auto-refreshed</td></tr>
+            <tr><td><code>last_sync_at</code></td><td><span class="type">DateTime?</span></td><td>Last successful Gmail sync</td></tr>
+            <tr><td><code>created_at</code></td><td><span class="type">DateTime</span></td><td>@default(now())</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Job</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td><span class="type">String @id</span></td><td><span class="pk">PK</span></td></tr>
+            <tr><td><code>user_id</code></td><td><span class="type">String</span></td><td><span class="pk">FK</span> → User</td></tr>
+            <tr><td><code>company</code></td><td><span class="type">String</span></td><td>Required</td></tr>
+            <tr><td><code>position</code></td><td><span class="type">String</span></td><td>Required</td></tr>
+            <tr><td><code>location</code></td><td><span class="type">String?</span></td><td></td></tr>
+            <tr><td><code>job_url</code></td><td><span class="type">String?</span></td><td></td></tr>
+            <tr><td><code>salary</code></td><td><span class="type">String?</span></td><td>Free-form</td></tr>
+            <tr><td><code>applied_date</code></td><td><span class="type">DateTime?</span></td><td></td></tr>
+            <tr><td><code>status</code></td><td><span class="type">JobStatus</span></td><td>Enum (see below)</td></tr>
+            <tr><td><code>notes</code></td><td><span class="type">String?</span></td><td></td></tr>
+            <tr><td><code>recruiter</code></td><td><span class="type">String?</span></td><td>Optional CRM field</td></tr>
+            <tr><td><code>created_at / updated_at</code></td><td><span class="type">DateTime</span></td><td>Auto-managed</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Email</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td><span class="type">String @id</span></td><td><span class="pk">PK</span></td></tr>
+            <tr><td><code>job_id</code></td><td><span class="type">String?</span></td><td><span class="pk">FK</span> → Job (nullable until matched)</td></tr>
+            <tr><td><code>user_id</code></td><td><span class="type">String</span></td><td><span class="pk">FK</span> → User</td></tr>
+            <tr><td><code>gmail_message_id</code></td><td><span class="type">String @unique</span></td><td>Idempotency key</td></tr>
+            <tr><td><code>subject</code></td><td><span class="type">String</span></td><td></td></tr>
+            <tr><td><code>from_email</code></td><td><span class="type">String</span></td><td></td></tr>
+            <tr><td><code>received_at</code></td><td><span class="type">DateTime</span></td><td></td></tr>
+            <tr><td><code>summary</code></td><td><span class="type">String?</span></td><td>AI-generated</td></tr>
+            <tr><td><code>action_required</code></td><td><span class="type">String?</span></td><td>AI-extracted</td></tr>
+            <tr><td><code>detected_status</code></td><td><span class="type">JobStatus?</span></td><td>AI-suggested</td></tr>
+            <tr><td><code>created_at</code></td><td><span class="type">DateTime</span></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Task</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td><span class="type">String @id</span></td><td><span class="pk">PK</span></td></tr>
+            <tr><td><code>job_id</code></td><td><span class="type">String?</span></td><td><span class="pk">FK</span> → Job</td></tr>
+            <tr><td><code>user_id</code></td><td><span class="type">String</span></td><td><span class="pk">FK</span> → User</td></tr>
+            <tr><td><code>title</code></td><td><span class="type">String</span></td><td>e.g. "Complete OA"</td></tr>
+            <tr><td><code>description</code></td><td><span class="type">String?</span></td><td></td></tr>
+            <tr><td><code>due_date</code></td><td><span class="type">DateTime?</span></td><td></td></tr>
+            <tr><td><code>completed</code></td><td><span class="type">Boolean</span></td><td>@default(false)</td></tr>
+            <tr><td><code>source</code></td><td><span class="type">TaskSource</span></td><td><code>email</code> | <code>manual</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Prisma sketch</h3>
+<pre><code><span class="tok-key">model</span> <span class="tok-type">Job</span> {
+  id           <span class="tok-type">String</span>   <span class="tok-key">@id</span> <span class="tok-key">@default</span>(cuid())
+  user         <span class="tok-type">User</span>    <span class="tok-key">@relation</span>(fields: [userId], references: [id], onDelete: Cascade)
+  userId       <span class="tok-type">String</span>
+  company      <span class="tok-type">String</span>
+  position     <span class="tok-type">String</span>
+  location     <span class="tok-type">String?</span>
+  jobUrl       <span class="tok-type">String?</span>
+  salary       <span class="tok-type">String?</span>
+  appliedDate  <span class="tok-type">DateTime?</span>
+  status       <span class="tok-type">JobStatus</span> <span class="tok-key">@default</span>(APPLIED)
+  notes        <span class="tok-type">String?</span>
+  emails       <span class="tok-type">Email</span>[]
+  tasks        <span class="tok-type">Task</span>[]
+  createdAt    <span class="tok-type">DateTime</span> <span class="tok-key">@default</span>(now())
+  updatedAt    <span class="tok-type">DateTime</span> <span class="tok-key">@updatedAt</span>
+}
+
+<span class="tok-key">enum</span> <span class="tok-type">JobStatus</span> {
+  APPLIED
+  ASSESSMENT
+  INTERVIEW
+  HR_ROUND
+  OFFER
+  REJECTED
+  GHOSTED
+}</code></pre>
+    </section>
+
+    <!-- 6. STATUS MODEL -->
+    <section id="status">
+      <div class="section-head">
+        <span class="num">06</span>
+        <h2>Status Lifecycle</h2>
+        <p>One controlled vocabulary across jobs, emails, and AI outputs.</p>
+      </div>
+
+      <div class="status-flow">
+        <span class="status-pill applied">Applied</span>
+        <span class="arrow">→</span>
+        <span class="status-pill assess">Assessment</span>
+        <span class="arrow">→</span>
+        <span class="status-pill interview">Interview</span>
+        <span class="arrow">→</span>
+        <span class="status-pill interview">HR Round</span>
+        <span class="arrow">→</span>
+        <span class="status-pill offer">Offer</span>
+      </div>
+      <div class="status-flow">
+        <span class="status-pill rejected">Rejected</span>
+        <span style="color:var(--text-faint); font-size:13px;">or</span>
+        <span class="status-pill rejected">Ghosted</span>
+        <span style="color:var(--text-faint); font-size:13px;">— terminal states reachable from any stage.</span>
+      </div>
+
+      <div class="callout warn">
+        <span class="icon">!</span>
+        <div class="body"><strong>Constrain the AI</strong>Always force the classifier to emit one of these exact enum values via structured JSON. Never let it free-text a status — that breaks matching and dashboard counts.</div>
+      </div>
+    </section>
+
+    <!-- 7. API CONTRACTS -->
+    <section id="api">
+      <div class="section-head">
+        <span class="num">07</span>
+        <h2>API Contracts</h2>
+        <p>Next.js Route Handlers under <code>/app/api</code>.</p>
+      </div>
+
+      <h3>Jobs</h3>
+      <div class="table-wrap" style="padding:4px 16px;">
+        <div class="api-row"><div class="method GET">GET</div><div><div class="api-path">/api/jobs</div><div class="api-desc">List jobs for the authenticated user (filterable by status).</div></div></div>
+        <div class="api-row"><div class="method POST">POST</div><div><div class="api-path">/api/jobs</div><div class="api-desc">Create a job. Body validated with Zod.</div></div></div>
+        <div class="api-row"><div class="method GET">GET</div><div><div class="api-path">/api/jobs/[id]</div><div class="api-desc">Job detail with emails, tasks, and timeline.</div></div></div>
+        <div class="api-row"><div class="method PATCH">PATCH</div><div><div class="api-path">/api/jobs/[id]</div><div class="api-desc">Update status / fields.</div></div></div>
+        <div class="api-row"><div class="method DELETE">DELETE</div><div><div class="api-path">/api/jobs/[id]</div><div class="api-desc">Delete job (cascades emails + tasks).</div></div></div>
+      </div>
+
+      <h3>AI</h3>
+      <div class="table-wrap" style="padding:4px 16px;">
+        <div class="api-row"><div class="method POST">POST</div><div><div class="api-path">/api/ai/parse-job</div><div class="api-desc">Accept raw JD text → return structured JSON (company, position, location, salary).</div></div></div>
+        <div class="api-row"><div class="method POST">POST</div><div><div class="api-path">/api/ai/classify-email</div><div class="api-desc">Accept email → { job_related, company, status, action_required, summary }.</div></div></div>
+      </div>
+
+      <h3>Gmail</h3>
+      <div class="table-wrap" style="padding:4px 16px;">
+        <div class="api-row"><div class="method GET">GET</div><div><div class="api-path">/api/gmail/connect</div><div class="api-desc">Begin OAuth flow with gmail.readonly scope.</div></div></div>
+        <div class="api-row"><div class="method GET">GET</div><div><div class="api-path">/api/gmail/callback</div><div class="api-desc">Exchange code, store tokens.</div></div></div>
+        <div class="api-row"><div class="method POST">POST</div><div><div class="api-path">/api/gmail/sync</div><div class="api-desc">Fetch recent emails, classify, match, persist. Idempotent.</div></div></div>
+        <div class="api-row"><div class="method GET">GET</div><div><div class="api-path">/api/gmail/status</div><div class="api-desc">Connection + last-sync metadata.</div></div></div>
+      </div>
+
+      <h3>Tasks &amp; Dashboard</h3>
+      <div class="table-wrap" style="padding:4px 16px;">
+        <div class="api-row"><div class="method GET">GET</div><div><div class="api-path">/api/tasks</div><div class="api-desc">Open action items across all jobs.</div></div></div>
+        <div class="api-row"><div class="method PATCH">PATCH</div><div><div class="api-path">/api/tasks/[id]</div><div class="api-desc">Toggle complete / set due date.</div></div></div>
+        <div class="api-row"><div class="method GET">GET</div><div><div class="api-path">/api/dashboard</div><div class="api-desc">Aggregate counts: applications, interviews, offers, rejections, action items.</div></div></div>
+      </div>
+    </section>
+
+    <!-- 8. FOLDER STRUCTURE -->
+    <section id="folders">
+      <div class="section-head">
+        <span class="num">08</span>
+        <h2>Folder Structure</h2>
+        <p>App Router layout with clean separation of concerns.</p>
+      </div>
+
+      <div class="card">
+        <div class="tree">
+<span class="dir">src/</span>
+├── <span class="dir">app/</span>
+│   ├── <span class="dir">(auth)/</span>            <span class="com"># login, OAuth callback</span>
+│   ├── <span class="dir">(dashboard)/</span>
+│   │   ├── <span class="file">layout.tsx</span>      <span class="com"># auth guard + sidebar shell</span>
+│   │   ├── <span class="file">page.tsx</span>        <span class="com"># Home / stats cards</span>
+│   │   ├── <span class="dir">jobs/</span>
+│   │   │   ├── <span class="file">page.tsx</span>    <span class="com"># jobs table</span>
+│   │   │   ├── <span class="dir">new/</span>        <span class="com"># create + AI paste</span>
+│   │   │   └── <span class="dir">[id]/</span>       <span class="com"># detail, timeline, emails, tasks</span>
+│   │   └── <span class="dir">gmail/</span>          <span class="com"># connection + sync UI</span>
+│   └── <span class="dir">api/</span>                <span class="com"># route handlers (see API contracts)</span>
+│       ├── <span class="dir">jobs/</span>  <span class="dir">ai/</span>  <span class="dir">gmail/</span>  <span class="dir">tasks/</span>  <span class="dir">dashboard/</span>
+├── <span class="dir">lib/</span>
+│   ├── <span class="dir">db/</span>                <span class="com"># prisma client singleton</span>
+│   ├── <span class="dir">repositories/</span>      <span class="com"># jobRepo, emailRepo, taskRepo</span>
+│   ├── <span class="dir">services/</span>          <span class="com"># gmail.ts, ai.ts, sync.ts</span>
+│   ├── <span class="dir">auth/</span>             <span class="com"># Auth.js config + token refresh</span>
+│   └── <span class="dir">schemas/</span>           <span class="com"># zod schemas</span>
+├── <span class="dir">components/</span>
+│   ├── <span class="dir">ui/</span>                <span class="com"># shadcn primitives</span>
+│   └── <span class="dir">features/</span>          <span class="com"># job-form, email-list, status-badge</span>
+├── <span class="dir">hooks/</span>                 <span class="com"># useJobs, useSync, etc. (TanStack Query)</span>
+└── <span class="dir">tests/</span>                 <span class="com"># unit tests (vitest)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. AUTH -->
+    <section id="auth">
+      <div class="section-head">
+        <span class="num">09</span>
+        <h2>Authentication</h2>
+        <p>Auth.js with Google OAuth, extended to capture Gmail tokens.</p>
+      </div>
+
+      <ul style="margin:0 0 12px 18px; color:var(--text-dim); font-size:14px;">
+        <li>Google login via Auth.js (NextAuth v5).</li>
+        <li>Request scopes: <code>openid</code>, <code>email</code>, <code>profile</code>, <code>gmail.readonly</code>.</li>
+        <li>On callback, persist <code>refresh_token</code> &amp; <code>access_token</code> to the User record.</li>
+        <li>Middleware guards all <code>(dashboard)</code> routes; redirects unauthenticated users to login.</li>
+        <li>Access tokens are short-lived — refresh transparently inside the Gmail service.</li>
+      </ul>
+
+      <div class="callout warn">
+        <span class="icon">🔒</span>
+        <div class="body"><strong>Security</strong>Tokens must be stored server-side only (never sent to the client). Consider encrypting <code>refresh_token</code> at rest using an app-level key. Never expose tokens in client components or logs.</div>
+      </div>
+    </section>
+
+    <!-- 10. GMAIL -->
+    <section id="gmail">
+      <div class="section-head">
+        <span class="num">10</span>
+        <h2>Gmail Integration</h2>
+        <p>The MVP's highest-value feature.</p>
+      </div>
+
+      <h3>Sync strategy — MVP (polling)</h3>
+      <ul style="margin:0 0 14px 18px; color:var(--text-dim); font-size:14px;">
+        <li>Triggered on dashboard refresh and via Vercel Cron (e.g. every 30 min).</li>
+        <li>Fetch the latest ~100 messages since <code>last_sync_at</code>.</li>
+        <li>Dedupe via <code>gmail_message_id</code> (unique constraint → idempotent).</li>
+        <li>Pass each to the AI classifier, match company → Job, persist.</li>
+      </ul>
+
+      <h3>Sync strategy — Production (push, deferred)</h3>
+      <ul style="margin:0 0 14px 18px; color:var(--text-dim); font-size:14px;">
+        <li>Gmail Push Notifications via Google Pub/Sub.</li>
+        <li>Real-time webhook on new messages — no polling.</li>
+        <li>Requires a public HTTPS webhook + Pub/Sub topic setup.</li>
+      </ul>
+
+      <div class="diagram">
+        <div class="flow">
+          <div class="node">User clicks<br>"Sync"</div>
+          <span class="connector">→</span>
+          <div class="node accent">Fetch emails<br>since last_sync</div>
+          <span class="connector">→</span>
+          <div class="node">Classify<br>(AI)</div>
+          <span class="connector">→</span>
+          <div class="node">Match<br>company → Job</div>
+          <span class="connector">→</span>
+          <div class="node">Update<br>status + task</div>
+          <span class="connector">→</span>
+          <div class="node green">Persist +<br>update last_sync_at</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11. AI JOB PARSING -->
+    <section id="ai-job">
+      <div class="section-head">
+        <span class="num">11</span>
+        <h2>AI Job Parsing <span style="font-size:12px; color:var(--text-faint); font-weight:400;">(deferred past MVP)</span></h2>
+        <p>Paste a JD → structured form fields.</p>
+      </div>
+
+      <p><strong>Model:</strong> Qwen 3 8B (OpenRouter) — cheap, fast, structured output capable.</p>
+
+      <h3>System prompt</h3>
+<pre><code><span class="tok-com">// system</span>
+Extract structured job information from the text.
+Return JSON only — no prose, no markdown fences.
+
+<span class="tok-com">// expected output shape</span>
+{
+  <span class="tok-str">"company"</span>: <span class="tok-str">"Google"</span>,
+  <span class="tok-str">"position"</span>: <span class="tok-str">"Software Engineer"</span>,
+  <span class="tok-str">"location"</span>: <span class="tok-str">"Bangalore"</span>,
+  <span class="tok-str">"salary"</span>: <span class="tok-str">"Not specified"</span>,
+  <span class="tok-str">"job_url"</span>: <span class="tok-str">"https://..."</span>
+}</code></pre>
+
+      <p>Result pre-fills the create form; the user reviews and edits before saving.</p>
+    </section>
+
+    <!-- 12. AI EMAIL CLASSIFICATION -->
+    <section id="ai-email">
+      <div class="section-head">
+        <span class="num">12</span>
+        <h2>AI Email Classification</h2>
+        <p>The engine that makes Gmail monitoring automatic.</p>
+      </div>
+
+      <p>For each fetched email, the AI returns a structured decision. Cost per email is negligible on Qwen 3 8B.</p>
+
+      <h3>Classifier prompt</h3>
+<pre><code><span class="tok-com">// system</span>
+You classify emails for a job-application tracker.
+Analyze the email and return JSON only.
+
+{
+  <span class="tok-str">"job_related"</span>: <span class="tok-key">true</span> | <span class="tok-key">false</span>,
+  <span class="tok-str">"company"</span>: <span class="tok-str">"Amazon"</span>,
+  <span class="tok-str">"status"</span>: <span class="tok-str">"INTERVIEW"</span>,        <span class="tok-com">// enum only</span>
+  <span class="tok-str">"action_required"</span>: <span class="tok-str">"Schedule interview"</span>,
+  <span class="tok-str">"summary"</span>: <span class="tok-str">"Shortlisted for SDE interview."</span>
+}</code></pre>
+
+      <h3>Example</h3>
+      <div class="card" style="margin-bottom:12px;">
+        <div class="head"><span class="emoji">📨</span><span class="title">Inbound email</span></div>
+        <p class="desc">"Congratulations! You have been shortlisted for the next round. Please use the link to book a slot."</p>
+      </div>
+      <div class="card">
+        <div class="head"><span class="emoji">🤖</span><span class="title">AI response</span><span class="badge accent">Qwen 3 8B</span></div>
+<pre style="margin-top:10px;"><code>{
+  <span class="tok-str">"job_related"</span>: <span class="tok-key">true</span>,
+  <span class="tok-str">"company"</span>: <span class="tok-str">"Amazon"</span>,
+  <span class="tok-str">"status"</span>: <span class="tok-str">"INTERVIEW"</span>,
+  <span class="tok-str">"action_required"</span>: <span class="tok-str">"Schedule interview"</span>,
+  <span class="tok-str">"summary"</span>: <span class="tok-str">"Shortlisted — book interview slot."</span>
+}</code></pre>
+      </div>
+
+      <div class="callout info">
+        <span class="icon">🔗</span>
+        <div class="body"><strong>Matching logic</strong>Company from AI is fuzzy-matched against the user's tracked Jobs (case-insensitive, alias-aware). If no match, the email is stored as <code>job_id = null</code> and surfaced in an "unmatched" queue for manual triage.</div>
+      </div>
+    </section>
+
+    <!-- 13. DASHBOARD -->
+    <section id="dashboard">
+      <div class="section-head">
+        <span class="num">13</span>
+        <h2>Dashboard Pages</h2>
+        <p>What the user actually sees.</p>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="head"><span class="emoji">🏠</span><span class="title">Home</span></div>
+          <p class="desc">Stat cards: Applications, Interviews, Offers, Rejections, Action Items.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">📋</span><span class="title">Jobs</span></div>
+          <p class="desc">Sortable table: Company · Role · Status · Last Update.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">🔍</span><span class="title">Job Detail</span></div>
+          <p class="desc">Info, timeline, emails, tasks, AI notes — one view per job.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">✉️</span><span class="title">Gmail Sync</span></div>
+          <p class="desc">Connected account, last sync, emails processed, resync button.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">⚡</span><span class="title">Action Items</span></div>
+          <p class="desc">Cross-job task list with due dates and completion toggles.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">📈</span><span class="title">Analytics <span class="badge amber">P1</span></span></div>
+          <p class="desc">Success rate, interview conversion, response times.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14. ROADMAP -->
+    <section id="roadmap">
+      <div class="section-head">
+        <span class="num">14</span>
+        <h2>Development Roadmap</h2>
+        <p>Phased delivery — MVP emphasizes Gmail + classification.</p>
+      </div>
+
+      <div class="timeline">
+        <div class="phase mvp">
+          <div class="ph-head"><span class="ph-name">Phase 1 — Foundation</span><span class="ph-label focus">MVP core</span></div>
+          <ul>
+            <li>Authentication (Google OAuth via Auth.js)</li>
+            <li>Job CRUD + Prisma schema + migrations</li>
+            <li>Dashboard with aggregate stat cards</li>
+            <li>Manual tracking end-to-end</li>
+          </ul>
+        </div>
+        <div class="phase mvp">
+          <div class="ph-head"><span class="ph-name">Phase 2 — Gmail Integration</span><span class="ph-label focus">MVP core</span></div>
+          <ul>
+            <li>Gmail OAuth connection + token storage</li>
+            <li>Email sync (polling) with idempotency</li>
+            <li>Email storage and listing</li>
+          </ul>
+        </div>
+        <div class="phase mvp">
+          <div class="ph-head"><span class="ph-name">Phase 3 — AI Email Classification</span><span class="ph-label focus">MVP core</span></div>
+          <ul>
+            <li>Detect job-related emails</li>
+            <li>Extract company + status + action item</li>
+            <li>Company → Job matching</li>
+            <li>Auto status updates + task generation</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <div class="ph-head"><span class="ph-name">Phase 4 — AI Job Parsing</span><span class="ph-label next">Next</span></div>
+          <ul>
+            <li>Paste JD → structured autofill</li>
+            <li>Edit-before-save review step</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <div class="ph-head"><span class="ph-name">Phase 5 — Analytics</span><span class="ph-label later">Later</span></div>
+          <ul>
+            <li>Application success rate</li>
+            <li>Interview conversion</li>
+            <li>Company insights &amp; response-time trends</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <div class="ph-head"><span class="ph-name">Phase 6 — Production Gmail</span><span class="ph-label later">Later</span></div>
+          <ul>
+            <li>Gmail Push via Google Pub/Sub</li>
+            <li>Real-time webhook pipeline</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15. STEPS -->
+    <section id="steps">
+      <div class="section-head">
+        <span class="num">15</span>
+        <h2>Implementation Order</h2>
+        <p>Build it, in this order.</p>
+      </div>
+
+      <ol class="steps">
+        <li>
+          <strong>Scaffold project</strong>
+          <div class="detail"><code>create-next-app</code>, Tailwind, shadcn/ui init, TypeScript strict, Prisma + Neon connection.</div>
+        </li>
+        <li>
+          <strong>Define Prisma schema &amp; migrate</strong>
+          <div class="detail">User, Job, Email, Task + JobStatus / TaskSource enums. Push to Neon.</div>
+        </li>
+        <li>
+          <strong>Wire Auth.js + Google OAuth</strong>
+          <div class="detail">Login, session, middleware guard. Store user record on first login.</div>
+        </li>
+        <li>
+          <strong>Job CRUD + repository layer</strong>
+          <div class="detail">Route handlers, Zod schemas, repositories, Server Actions where sensible.</div>
+        </li>
+        <li>
+          <strong>Dashboard + jobs UI</strong>
+          <div class="detail">Stat cards, jobs table, status badges, dark mode.</div>
+        </li>
+        <li>
+          <strong>Gmail OAuth + token storage</strong>
+          <div class="detail">Add <code>gmail.readonly</code> scope, callback handler, encrypted token persistence.</div>
+        </li>
+        <li>
+          <strong>Gmail sync service</strong>
+          <div class="detail">Fetch, dedupe by message id, store raw emails. Resync button.</div>
+        </li>
+        <li>
+          <strong>AI classification integration</strong>
+          <div class="detail">OpenRouter client, Qwen 3 8B, structured JSON via response schema. Per-email classification.</div>
+        </li>
+        <li>
+          <strong>Company matching + status updates</strong>
+          <div class="detail">Fuzzy match to Jobs, update status, auto-create tasks.</div>
+        </li>
+        <li>
+          <strong>Job detail view + timeline</strong>
+          <div class="detail">Unified view of info, emails, tasks, status history.</div>
+        </li>
+        <li>
+          <strong>Tests, rate limiting, hardening</strong>
+          <div class="detail">Vitest unit tests for services/repositories, rate-limit AI + sync endpoints, error boundaries.</div>
+        </li>
+        <li>
+          <strong>Deploy to Vercel</strong>
+          <div class="detail">Env vars, Neon prod DB, Vercel Cron for scheduled syncs.</div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- 16. ENV -->
+    <section id="env">
+      <div class="section-head">
+        <span class="num">16</span>
+        <h2>Environment Variables</h2>
+        <p>Required configuration.</p>
+      </div>
+
+      <div class="card">
+        <ul class="env-list">
+          <li><span class="key">DATABASE_URL</span><span class="desc">Neon Postgres connection string.</span></li>
+          <li><span class="key">AUTH_SECRET</span><span class="desc">Auth.js session signing secret.</span></li>
+          <li><span class="key">AUTH_GOOGLE_ID</span><span class="desc">Google OAuth client ID.</span></li>
+          <li><span class="key">AUTH_GOOGLE_SECRET</span><span class="desc">Google OAuth client secret.</span></li>
+          <li><span class="key">OPENROUTER_API_KEY</span><span class="desc">OpenRouter API key for AI calls.</span></li>
+          <li><span class="key">OPENROUTER_MODEL</span><span class="desc">Default: <code>qwen/qwen3-8b</code>.</span></li>
+          <li><span class="key">TOKEN_ENCRYPTION_KEY</span><span class="desc">Key for encrypting Gmail refresh tokens at rest.</span></li>
+          <li><span class="key">NEXTAUTH_URL</span><span class="desc">App base URL (Vercel domain in prod).</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 17. DEPLOY -->
+    <section id="deploy">
+      <div class="section-head">
+        <span class="num">17</span>
+        <h2>Deployment</h2>
+        <p>Vercel + Neon, Vercel-friendly by design.</p>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="head"><span class="emoji">▲</span><span class="title">Vercel</span></div>
+          <p class="desc">App hosting, serverless route handlers, automatic deploys from Git.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">🐘</span><span class="title">Neon</span></div>
+          <p class="desc">Serverless Postgres with connection pooling &amp; free tier.</p>
+        </div>
+        <div class="card">
+          <div class="head"><span class="emoji">⏱️</span><span class="title">Vercel Cron</span></div>
+          <p class="desc">Scheduled Gmail sync (e.g. every 30 min) until Pub/Sub is added.</p>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="icon">✓</span>
+        <div class="body"><strong>Definition of done (MVP)</strong>A user can log in with Google, connect Gmail, add jobs manually, and watch the dashboard update automatically as job-related emails arrive — with status changes and action items surfaced without manual effort.</div>
+      </div>
+    </section>
+
+    <div class="footer">
+      JobFlow — Project Plan · Generated for solo-developer portfolio build · Single-codebase Next.js + Prisma + Neon + OpenRouter
+    </div>
+
+  </main>
+</div>
+</body>
+</html>

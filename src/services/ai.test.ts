@@ -1,0 +1,136 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { classifyEmail } from "./ai";
+import { JobStatus } from "@prisma/client";
+
+describe("ai service", () => {
+  const originalApiKey = process.env.OPENROUTER_API_KEY;
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    process.env.OPENROUTER_API_KEY = "test-openrouter-key";
+    globalThis.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    process.env.OPENROUTER_API_KEY = originalApiKey;
+    globalThis.fetch = originalFetch;
+    vi.clearAllMocks();
+  });
+
+  it("should throw an error if OPENROUTER_API_KEY is missing", async () => {
+    delete process.env.OPENROUTER_API_KEY;
+    await expect(classifyEmail("Subj", "Body", "recruiter@co.com")).rejects.toThrow(
+      "OPENROUTER_API_KEY environment variable is not configured."
+    );
+  });
+
+  it("should successfully classify job-related email with standard response", async () => {
+    const mockApiResponse = {
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              job_related: true,
+              company: "Stripe",
+              status: JobStatus.INTERVIEW,
+              action_required: "Schedule interview",
+              due_date: "2026-06-25",
+              summary: "Invitation to interview.",
+            }),
+          },
+        },
+      ],
+    };
+
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => mockApiResponse,
+    } as any);
+
+    const result = await classifyEmail("Interview Invitation", "Please choose a time slot", "recruiter@stripe.com");
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://openrouter.ai/api/v1/chat/completions",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-openrouter-key",
+        }),
+      })
+    );
+
+    expect(result).toEqual({
+      job_related: true,
+      company: "Stripe",
+      status: JobStatus.INTERVIEW,
+      action_required: "Schedule interview",
+      due_date: "2026-06-25",
+      summary: "Invitation to interview.",
+    });
+  });
+
+  it("should successfully classify and strip markdown backticks if returned by LLM", async () => {
+    const mockApiResponse = {
+      choices: [
+        {
+          message: {
+            content: "```json\n" + JSON.stringify({
+              job_related: false,
+              company: "",
+              status: null,
+              action_required: null,
+              due_date: null,
+              summary: null,
+            }) + "\n```",
+          },
+        },
+      ],
+    };
+
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => mockApiResponse,
+    } as any);
+
+    const result = await classifyEmail("Newsletter", "weekly digest of news", "digest@news.com");
+    expect(result.job_related).toBe(false);
+    expect(result.company).toBe("");
+  });
+
+  it("should throw error if fetch response is not ok", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () => "Bad Request",
+    } as any);
+
+    await expect(
+      classifyEmail("Interview Invitation", "Please choose a time slot", "recruiter@stripe.com")
+    ).rejects.toThrow("OpenRouter API error (status 400): Bad Request");
+  });
+
+  it("should throw error if LLM returns invalid JSON schema", async () => {
+    const mockApiResponse = {
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              job_related: "maybe", // should be boolean
+              company: 123, // should be string
+            }),
+          },
+        },
+      ],
+    };
+
+    vi.mocked(globalThis.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => mockApiResponse,
+    } as any);
+
+    await expect(
+      classifyEmail("Interview Invitation", "Please choose a time slot", "recruiter@stripe.com")
+    ).rejects.toThrow("Invalid JSON or schema from AI");
+  });
+});

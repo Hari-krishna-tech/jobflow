@@ -1,0 +1,232 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * JobFlow design tokens — dark-first.
+ * Source of truth: CONTEXT/01-design-tokens.md
+ * Never hardcode hex in components; reference these via Tailwind utilities
+ * (bg-bg-soft, text-accent, border-border, …) mapped in @theme inline below.
+ */
+:root {
+  /* Surfaces (three depths: bg < bg-soft < card) */
+  --bg: #0a0a0b;
+  --bg-soft: #111113;
+  --card: #151518;
+  --card-hover: #1a1a1f;
+  --border: #26262c;
+  --border-soft: #1e1e24;
+
+  /* Text */
+  --text: #ededf0;
+  --text-dim: #a1a1aa;
+  --text-faint: #6b6b75;
+
+  /* Accent + semantic (one accent, disciplined semantic palette) */
+  --accent: #6366f1;
+  --accent-soft: #818cf8;
+  --accent-bg: rgba(99, 102, 241, 0.12);
+  --green: #22c55e;
+  --green-bg: rgba(34, 197, 94, 0.12);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245, 158, 11, 0.12);
+  --red: #ef4444;
+  --red-bg: rgba(239, 68, 68, 0.12);
+  --cyan: #06b6d4;
+  --pink: #ec4899;
+
+  /* Motion (plain vars, used via arbitrary values like transition-[var(--ease-normal)]) */
+  --ease-fast: 150ms ease-out;
+  --ease-normal: 200ms ease-out;
+  --ease-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /*
+   * shadcn/ui alias layer — map shadcn's expected vars to JobFlow tokens so
+   * shadcn primitives consume the same palette. Note: shadcn's `accent`
+   * semantic is reused for the brand indigo (per JobFlow spec), so shadcn
+   * components that hover with bg-accent will pick up indigo; per-component
+   * hover/radius tuning is deferred to Phase 4 (dark-mode polish).
+   */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card-foreground: var(--text);
+  --popover: var(--card);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: #ffffff;
+  --secondary: var(--card);
+  --secondary-foreground: var(--text);
+  --muted: var(--card-hover);
+  --muted-foreground: var(--text-dim);
+  --accent-foreground: #ffffff;
+  --destructive: var(--red);
+  --input: var(--border);
+  --ring: var(--accent);
+  --sidebar: var(--bg-soft);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--card);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--accent);
+}
+
+/*
+ * Dark is the default theme. `.dark` is a no-op mirror so a future light
+ * theme toggle can swap :root values without touching components.
+ */
+.dark {
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card-foreground: var(--text);
+  --popover: var(--card);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: #ffffff;
+  --secondary: var(--card);
+  --secondary-foreground: var(--text);
+  --muted: var(--card-hover);
+  --muted-foreground: var(--text-dim);
+  --accent-foreground: #ffffff;
+  --destructive: var(--red);
+  --input: var(--border);
+  --ring: var(--accent);
+  --sidebar: var(--bg-soft);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--card);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--accent);
+}
+
+/*
+ * Map tokens → Tailwind utilities. This is the Tailwind v4 equivalent of the
+ * `colors` / `borderRadius` / `fontFamily` blocks in tailwind.config.ts
+ * (see CONTEXT/01-design-tokens.md §10). After this, utilities like
+ * bg-bg-soft, text-accent, border-border, text-text-dim, font-mono are
+ * available everywhere.
+ */
+@theme inline {
+  /* JobFlow surface + text utilities */
+  --color-bg: var(--bg);
+  --color-bg-soft: var(--bg-soft);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-border: var(--border);
+  --color-border-soft: var(--border-soft);
+  --color-text: var(--text);
+  --color-text-dim: var(--text-dim);
+  --color-text-faint: var(--text-faint);
+
+  /* Accent + semantic */
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-bg: var(--accent-bg);
+  --color-green: var(--green);
+  --color-green-bg: var(--green-bg);
+  --color-amber: var(--amber);
+  --color-amber-bg: var(--amber-bg);
+  --color-red: var(--red);
+  --color-red-bg: var(--red-bg);
+  --color-cyan: var(--cyan);
+  --color-pink: var(--pink);
+
+  /* shadcn semantic utilities (kept so shadcn primitives render correctly) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radius (spec: containers 12, controls 6, large 16, pills 999) */
+  --radius: 12px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-4xl: 32px;
+  --radius-full: 999px;
+
+  /* Fonts: Inter (sans) + JetBrains Mono (mono) loaded via next/font */
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-jetbrains), "SF Mono", ui-monospace, Menlo, monospace;
+  --font-heading: var(--font-sans);
+
+  /* Shadows — borders do the work; shadows only for floating layers */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans scroll-smooth;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Selection highlight */
+  ::selection {
+    background: var(--accent-bg);
+    color: var(--accent-soft);
+  }
+
+  /* Custom dark scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: var(--radius-full);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-faint);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
