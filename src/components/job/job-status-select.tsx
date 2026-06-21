@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { StatusBadge } from "@/components/status-badge";
 
 interface JobStatusSelectProps {
   jobId: string;
@@ -34,26 +35,31 @@ export function JobStatusSelect({ jobId, currentStatus }: JobStatusSelectProps) 
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center w-full">
       <Select
         value={currentStatus}
         onValueChange={handleStatusChange}
         disabled={isPending}
       >
-        <SelectTrigger className="w-[160px] bg-bg-soft border-border text-sm font-semibold h-9">
+        <SelectTrigger className="w-full bg-bg-soft border-border text-sm font-semibold h-10 px-3 cursor-pointer">
           {isPending ? (
             <div className="flex items-center gap-2">
               <Loader2 className="size-3.5 animate-spin text-text-dim" />
-              <span>Updating...</span>
+              <span className="text-text-dim text-xs font-medium">Updating...</span>
             </div>
           ) : (
-            <SelectValue placeholder="Change status..." />
+            <div className="flex items-center gap-2.5">
+              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-text-faint">Status:</span>
+              <StatusBadge status={currentStatus} />
+            </div>
           )}
         </SelectTrigger>
         <SelectContent>
           {Object.values(JobStatus).map((status) => (
-            <SelectItem key={status} value={status}>
-              {JOB_STATUS_LABELS[status]}
+            <SelectItem key={status} value={status} className="cursor-pointer">
+              <div className="py-0.5">
+                <StatusBadge status={status} />
+              </div>
             </SelectItem>
           ))}
         </SelectContent>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Briefcase } from "lucide-react";
+import Image from "next/image";
 import { NAV_ITEMS } from "./nav";
 import { cn } from "@/lib/utils";
 
@@ -33,9 +33,13 @@ export function Sidebar() {
         href="/"
         className="flex items-center gap-2.5 rounded-md px-1.5 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg-soft"
       >
-        <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-pink text-white">
-          <Briefcase className="size-[18px]" />
-        </span>
+        <Image
+          src="/logo.svg"
+          alt="JobFlow Logo"
+          width={32}
+          height={32}
+          className="size-8"
+        />
         <span className="text-[15px] font-semibold tracking-tight text-text">
           JobFlow
         </span>

@@ -41,7 +41,7 @@ export function AddTaskForm({ jobId }: AddTaskFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 p-4 border border-border/30 rounded-xl bg-card"
+      className="flex flex-col gap-3 pt-4 border-t border-border/30 mt-2"
     >
       <h4 className="text-[11px] font-mono font-semibold uppercase tracking-wider text-text-faint">
         Add Action Item

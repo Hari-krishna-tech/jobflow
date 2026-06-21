@@ -185,16 +185,16 @@ export default async function JobDetailPage({
             <CardContent className="pt-6">
               <div className="relative border-l-2 border-border/40 pl-6 ml-3 space-y-8 py-2">
                 {events.map((event) => {
-                  let dotColor = "ring-accent bg-accent/30";
-                  if (event.type === "applied") dotColor = "ring-indigo-400 bg-indigo-950 text-indigo-400";
-                  if (event.type === "email") dotColor = "ring-cyan/70 bg-cyan-950/40 text-cyan-400";
-                  if (event.type === "task_created") dotColor = "ring-amber/70 bg-amber-950/40 text-amber-400";
-                  if (event.type === "task_completed") dotColor = "ring-green/70 bg-green-950/40 text-green-400";
+                  let dotColor = "border-accent";
+                  if (event.type === "applied") dotColor = "border-accent";
+                  if (event.type === "email") dotColor = "border-cyan";
+                  if (event.type === "task_created") dotColor = "border-amber";
+                  if (event.type === "task_completed") dotColor = "border-green";
 
                   return (
                     <div key={event.id} className="relative">
                       <span
-                        className={`absolute -left-[32px] top-1.5 size-3.5 rounded-full ring-4 ring-bg ${dotColor}`}
+                        className={`absolute -left-[30px] top-1.5 size-3 rounded-full border-2 bg-card ${dotColor}`}
                       />
                       <div className="flex flex-col gap-0.5">
                         <span className="font-mono text-[10px] text-text-faint">
@@ -281,8 +281,7 @@ export default async function JobDetailPage({
               <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-text-faint">
                 Application Status
               </span>
-              <div className="flex items-center justify-between gap-3">
-                <StatusBadge status={job.status} />
+              <div className="mt-1">
                 <JobStatusSelect jobId={job.id} currentStatus={job.status} />
               </div>
             </CardContent>

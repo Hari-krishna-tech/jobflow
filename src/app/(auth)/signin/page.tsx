@@ -1,5 +1,5 @@
 import { signIn } from "@/lib/auth";
-import { Briefcase } from "lucide-react";
+import Image from "next/image";
 
 export default function SignInPage() {
   return (
@@ -7,9 +7,13 @@ export default function SignInPage() {
       <div className="flex w-full max-w-[400px] flex-col gap-6 rounded-lg p-8">
         {/* Brand */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-pink text-white">
-            <Briefcase className="size-5" />
-          </div>
+          <Image
+            src="/logo.svg"
+            alt="JobFlow Logo"
+            width={40}
+            height={40}
+            className="size-10"
+          />
           <div className="flex flex-col gap-1">
             <h1 className="text-h1 font-bold tracking-tight text-text">
               JobFlow
