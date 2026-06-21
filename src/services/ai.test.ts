@@ -199,6 +199,34 @@ describe("ai service", () => {
       expect(result.position).toBe("Product Engineer");
     });
 
+    it("should successfully parse double-serialized JSON strings", async () => {
+      const mockApiResponse = {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify(JSON.stringify({
+                company: "Google",
+                position: "Software Engineer",
+                location: "Mountain View, CA",
+                salary: null,
+                recruiter: null,
+                notes: null,
+              })),
+            },
+          },
+        ],
+      };
+
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => mockApiResponse,
+      } as any);
+
+      const result = await parseJobDescription("Software Engineer at Google...");
+      expect(result.company).toBe("Google");
+      expect(result.position).toBe("Software Engineer");
+    });
+
     it("should throw error if fetch response is not ok", async () => {
       vi.mocked(globalThis.fetch).mockResolvedValue({
         ok: false,

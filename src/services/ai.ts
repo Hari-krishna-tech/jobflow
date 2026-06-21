@@ -101,7 +101,10 @@ Rules:
   }
 
   try {
-    const parsed = JSON.parse(cleanedContent);
+    let parsed = JSON.parse(cleanedContent);
+    if (typeof parsed === "string") {
+      parsed = JSON.parse(parsed);
+    }
     return classificationSchema.parse(parsed);
   } catch (parseError) {
     console.error("Failed to parse AI classification content:", cleanedContent);
@@ -196,7 +199,10 @@ Rules:
   }
 
   try {
-    const parsed = JSON.parse(cleanedContent);
+    let parsed = JSON.parse(cleanedContent);
+    if (typeof parsed === "string") {
+      parsed = JSON.parse(parsed);
+    }
     return jobParsingSchema.parse(parsed);
   } catch (parseError) {
     console.error("Failed to parse AI job description parsing content:", cleanedContent);
