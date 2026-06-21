@@ -120,8 +120,12 @@ Rules:
     const parsed = parseLLMResponse(rawContent);
     return classificationSchema.parse(parsed);
   } catch (parseError) {
-    console.error("Failed to parse AI classification content:", rawContent);
-    throw new Error(`Invalid JSON or schema from AI: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+    console.log("=== AI EMAIL CLASSIFICATION FAILURE ===");
+    console.log("EXPECTED SCHEMA: { job_related: boolean, company: string, status: JobStatus | null, action_required: string | null, due_date: string | null, summary: string | null }");
+    console.log("RAW LLM OUTPUT:", rawContent);
+    console.log("PARSING ERROR:", parseError);
+    console.log("========================================");
+    throw new Error(`Invalid JSON or schema from AI: ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw LLM Output: "${rawContent.slice(0, 150)}"`);
   }
 }
 
@@ -209,7 +213,11 @@ Rules:
     const parsed = parseLLMResponse(rawContent);
     return jobParsingSchema.parse(parsed);
   } catch (parseError) {
-    console.error("Failed to parse AI job description parsing content:", rawContent);
-    throw new Error(`Invalid JSON or schema from AI: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+    console.log("=== AI JOB PARSING FAILURE ===");
+    console.log("EXPECTED SCHEMA: { company: string, position: string, location: string | null, salary: string | null, recruiter: string | null, notes: string | null }");
+    console.log("RAW LLM OUTPUT:", rawContent);
+    console.log("PARSING ERROR:", parseError);
+    console.log("===============================");
+    throw new Error(`Invalid JSON or schema from AI: ${parseError instanceof Error ? parseError.message : String(parseError)}. Raw LLM Output: "${rawContent.slice(0, 150)}"`);
   }
 }
