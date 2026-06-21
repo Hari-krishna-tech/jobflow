@@ -11,6 +11,8 @@ import {
 import * as jobRepo from "@/lib/repositories/jobRepo";
 import { ZodError } from "zod";
 import { fail, ok, type ActionResult } from "./types";
+import { parseJobDescription } from "@/services/ai";
+import { isRateLimited } from "@/lib/rate-limit";
 
 /*
  * Job Server Actions (Task 1.8).
@@ -86,4 +88,36 @@ export async function deleteJobAction(id: string): Promise<ActionResult<{ id: st
   revalidatePath("/");
   revalidatePath("/jobs");
   return ok({ id }, "Job deleted.");
+}
+
+/** Parse a raw job description and return the structured details. */
+export async function parseJobDescriptionAction(
+  jdText: string,
+): Promise<ActionResult<{
+  company: string;
+  position: string;
+  location: string | null;
+  salary: string | null;
+  recruiter: string | null;
+  notes: string | null;
+}>> {
+  const userId = await requireUserId();
+
+  if (!jdText.trim()) {
+    return fail("Please paste a job description first.");
+  }
+
+  // Rate limit: 10 requests per minute
+  if (isRateLimited(`parse-jd:${userId}`, 10, 60 * 1000)) {
+    return fail("Too many requests. Please wait a minute and try again.");
+  }
+
+  try {
+    const parsed = await parseJobDescription(jdText);
+    return ok(parsed);
+  } catch (error: unknown) {
+    console.error("AI job description parsing Server Action error:", error);
+    const message = error instanceof Error ? error.message : "Failed to parse job description.";
+    return fail(message);
+  }
 }

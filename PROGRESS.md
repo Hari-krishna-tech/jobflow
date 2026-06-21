@@ -73,11 +73,11 @@
 ## Deferred (Post-MVP)
 | | Task | Status | Notes |
 |---|---|:---:|---|
-| ⏭️ | AI job parsing (paste JD → autofill) | ⬜ | Phase 5 |
+| ⏭️ | AI job parsing (paste JD → autofill) | ✅ | Phase 5: Pasting JD extracts structured details via OpenRouter Qwen 3 8B, supporting edit-before-save review |
 | ⏭️ | Analytics dashboard (success rate, conversion) | ⬜ | Phase 5 |
 | ⏭️ | Gmail Push via Google Pub/Sub | ⬜ | Phase 6 |
 | ⏭️ | Company insights | ⬜ | Phase 5 |
-| ⏭️ | PWA / mobile | ⬜ | |
+| ⏭️ | PWA / mobile | ✅ | Phase 5: Configured web manifest, viewport themes/scales, and Apple mobile meta tags |
 
 ---
 
@@ -94,6 +94,7 @@
 ## Changelog
 > Append entries as work completes. Newest first.
 
+- **2026-06-21** — Phase 5 partial complete (AI Job Parsing & PWA Support): pastable JD extracts structured data via rate-limited Server Action and OpenRouter Qwen 3 8B with controlled inputs for review-before-save; configured PWA settings (`manifest.json` and viewport/meta layout settings). Next: remaining Phase 5 tasks (Analytics dashboard, Company insights).
 - **2026-06-21** — Phase 4 complete. Set up Vitest framework and wrote 57 unit tests covering repositories, utility formatters, token encryption, classification, Gmail fetching/decoding, sync pipeline orchestration, and route handlers. Implemented in-memory sliding window rate limiting on API endpoints with Cron secret bypass. Added dashboard-level and root-level error boundaries. Polished dark mode layout scrollbars/selections, and created deployment guides and Vercel Cron configs. Next: Phase 5 (Deferred/Post-MVP).
 - **2026-06-21** — Phase 3 complete. Implemented OpenRouter AI email classification service & API route handler using Zod parsing. Integrated fuzzy matching, auto status updates, and auto-task generation inside sync pipeline and link actions. Configured Gmail search query pre-filtering (excluding promotions/social/forums) and server-side email list pagination (30 per page) with Previous/Next controls on the dashboard. Built new Task repository, Server Actions, and client components (<TaskItem />, <JobStatusSelect />, <AddTaskForm />). Created rich Job Detail view (/jobs/[id]) with interleaved Activity Timeline and paged emails list, and revamped the /tasks Action Items page. Next: Phase 4.
 - **2026-06-21** — Phase 2 complete. Configured Google provider for `gmail.readonly` scope and `offline` access (refresh token). Created `aes-256-gcm` encryption utility for storing refresh tokens at rest with `TOKEN_ENCRYPTION_KEY`. Extended Auth.js callbacks to persist tokens. Created Gmail retrieval service with automatic access token refresh, body decoder, and recursive payload parser. Wrote idempotent coordinator to fetch and persist synced emails. Exposed Server Actions (`syncGmailAction`, `disconnectGmailAction`, `linkEmailToJobAction`), Route Handler `/api/gmail/sync` for Crons, and built the complete `/gmail` sync dashboard page with unmatched email queue + job linking dialog. Build + lint clean. Next: Phase 3.

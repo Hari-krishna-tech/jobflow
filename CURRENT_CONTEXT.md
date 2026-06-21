@@ -5,7 +5,7 @@
 >
 > **Cadence:** Updated at the end of every phase (and after any significant mid-phase change). See [Update Protocol](#update-protocol) at the bottom.
 >
-> **Last updated:** 2026-06-21 · Phase 4 complete (Hardening & Deploy 4.1–4.6 done); Post-MVP/Deferred remaining
+> **Last updated:** 2026-06-21 · Phase 5 progress (AI Job Parsing & PWA complete; remaining Post-MVP in progress)
 
 ---
 
@@ -26,6 +26,7 @@ A personal, AI-assisted job application tracker. Add jobs manually, let AI extra
 | 2 | Gmail Integration | ✅ | 2.1–2.7 complete: OAuth scopes, AES-256-GCM encrypted token persistence, sync service fetching messages since `last_sync_at`, deduplication via unique constraint, sync dashboard, sync/disconnect/link actions |
 | 3 | AI Email Classification | ✅ | 3.1–3.8 complete: OpenRouter client, structured output Zod schema, classify endpoint, fuzzy match job, auto status updates, auto-created tasks, Job Detail Timeline/Tasks/Emails page, tasks groups |
 | 4 | Hardening & Deploy | ✅ | 4.1–4.6 complete: Vitest testing (57 tests passing), rate limiting utilities and route integration, root/dashboard error boundaries, scrollbars/selection styling, DEPLOYMENT.md, and vercel.json crons configuration. |
+| 5 | Post-MVP / Deferred | 🔄 | AI Job Description Parsing and PWA/Mobile layout polish complete. Remaining: Analytics dashboard, Company insights, Gmail Push. |
 
 **MVP definition of done:** User logs in with Google → connects Gmail → adds jobs manually → dashboard updates automatically as job emails arrive, with status changes and action items surfaced.
 
@@ -135,12 +136,10 @@ These are settled. If you want to change one, flag it explicitly rather than sil
 
 > What to do right now. Mirrors the first non-complete tasks in `PROGRESS.md`.
 
-All MVP phases (Phase 1 to Phase 4) are completed. Next steps include reviewing deferred post-MVP features:
-1. ⏭️ AI job parsing (paste JD → autofill) - Phase 5
-2. ⏭️ Analytics dashboard (success rate, conversion) - Phase 5
+Next steps include the remaining deferred post-MVP features:
+1. ⏭️ Analytics dashboard (success rate, conversion) - Phase 5
+2. ⏭️ Company insights - Phase 5
 3. ⏭️ Gmail Push via Google Pub/Sub - Phase 6
-4. ⏭️ Company insights - Phase 5
-5. ⏭️ PWA / mobile support - Phase 5
 
 ---
 
@@ -184,6 +183,7 @@ All MVP phases (Phase 1 to Phase 4) are completed. Next steps include reviewing 
 ### §8 Changelog
 > Newest first. One line per update.
 
+- **2026-06-21** — Phase 5 partial complete (AI Job Description Parsing & PWA): pastable JD extracts structured data via rate-limited Server Action and OpenRouter Qwen 3 8B with controlled inputs for review-before-save; configured PWA settings (manifest.json and viewport/meta layout settings). Next: remaining Phase 5 tasks.
 - **2026-06-21** — Phase 4 complete (Hardening & Deploy): Integrated Vitest and wrote 57 tests covering repos, services, utilities, and routes; added client-IP and user sliding-window rate limiters; added root and dashboard error boundary elements; polished selection and scrollbar styling; created DEPLOYMENT.md and vercel.json cron jobs configuration. Next: Post-MVP / Deferred.
 - **2026-06-21** — Phase 3 complete (AI Email Classification): OpenRouter Qwen 3 8B client & Zod schema JSON parser; classify endpoint; sync integration with fuzzy matching, auto status updates, and auto-generated tasks; Gmail API query pre-filtering (excluding promotions/social/forums) and server-side pagination (30 per page) with UI controls; rich Job Detail page with chronological Activity Timeline, checklist, CRM, notes, and matched emails; /tasks Action Items page with responsive calendar groups. Build + lint clean. Next: Phase 4 (Hardening & Deploy).
 - **2026-06-21** — Phase 2 complete (Gmail integration): Configured Google OAuth `gmail.readonly` scope + offline access; AES-256-GCM encrypted refresh token storage at rest; Gmail service client fetching new messages since last sync with auto-token-refresh; coordinator syncing and deduplicating emails; /gmail dashboard page with sync metrics, sync triggers, and manual link to jobs dialog/actions. Clean build and lint. Next: Phase 3 (AI Email Classification).

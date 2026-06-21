@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Job } from "@prisma/client";
 import { JobStatus } from "@prisma/client";
 import { JOB_STATUS_LABELS, JOB_STATUSES, type CreateJobInput } from "@/lib/schemas/job";
-import { createJobAction, updateJobAction } from "@/lib/actions/job";
+import { createJobAction, updateJobAction, parseJobDescriptionAction } from "@/lib/actions/job";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,53 @@ type JobFormProps = {
 export function JobForm({ job }: JobFormProps) {
   const router = useRouter();
   const isEdit = !!job;
+
+  // --- Controlled Form State ---
+  const [formValues, setFormValues] = useState({
+    company: job?.company ?? "",
+    position: job?.position ?? "",
+    location: job?.location ?? "",
+    salary: job?.salary ?? "",
+    jobUrl: job?.jobUrl ?? "",
+    appliedDate: job?.appliedDate ? formatDate(job.appliedDate) : "",
+    status: job?.status ?? JobStatus.APPLIED,
+    recruiter: job?.recruiter ?? "",
+    notes: job?.notes ?? "",
+  });
+
+  const [jdText, setJdText] = useState("");
+  const [isExtracting, setIsExtracting] = useState(false);
+
+  const handleChange = (name: string, value: string) => {
+    setFormValues((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleExtractAI = async () => {
+    if (!jdText.trim()) {
+      toast.error("Please paste a job description first.");
+      return;
+    }
+
+    setIsExtracting(true);
+    const result = await parseJobDescriptionAction(jdText);
+    setIsExtracting(false);
+
+    if (result.ok && result.data) {
+      const data = result.data;
+      setFormValues((prev) => ({
+        ...prev,
+        company: data.company || prev.company,
+        position: data.position || prev.position,
+        location: data.location || prev.location,
+        salary: data.salary || prev.salary,
+        notes: data.notes || prev.notes,
+        recruiter: data.recruiter || prev.recruiter,
+      }));
+      toast.success("Job details extracted successfully!");
+    } else {
+      toast.error(result.message ?? "Extraction failed.");
+    }
+  };
 
   // --- Create action state ---
   const [createState, createDispatch, isCreating] = useActionState(
@@ -90,37 +137,47 @@ export function JobForm({ job }: JobFormProps) {
         className="flex flex-col gap-5"
         noValidate
       >
-        {/* JD paste area (disabled for MVP — AI parsing is Phase 5) */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="jd" className="text-text-dim">
-            Paste job description
-          </Label>
-          <Textarea
-            id="jd"
-            name="jd"
-            placeholder="Paste the full job description here…"
-            rows={4}
-            disabled
-            className="resize-none"
-          />
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-text-faint">
-              AI-powered extraction coming soon.
-            </span>
-            <Button type="button" variant="secondary" size="sm" disabled>
-              Extract with AI
-            </Button>
+        {/* JD paste area (enabled for Phase 5) */}
+        {!isEdit && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="jd" className="text-text-dim">
+              Paste job description
+            </Label>
+            <Textarea
+              id="jd"
+              placeholder="Paste the full job description here…"
+              rows={4}
+              value={jdText}
+              onChange={(e) => setJdText(e.target.value)}
+              disabled={isExtracting}
+              className="resize-none"
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-text-faint">
+                {isExtracting ? "AI is analyzing description..." : "Extract structured fields automatically."}
+              </span>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleExtractAI}
+                disabled={isExtracting || !jdText.trim()}
+              >
+                {isExtracting ? "Extracting..." : "Extract with AI"}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
-        <hr className="border-border-soft" />
+        {!isEdit && <hr className="border-border-soft" />}
 
         {/* Structured fields */}
         <div className="grid gap-4 sm:grid-cols-2">
           <FieldGroup
             name="company"
             label="Company"
-            defaultValue={job?.company ?? ""}
+            value={formValues.company}
+            onChange={(e) => handleChange("company", e.target.value)}
             error={fieldErrors?.company}
             required
             placeholder="Acme Corp"
@@ -128,7 +185,8 @@ export function JobForm({ job }: JobFormProps) {
           <FieldGroup
             name="position"
             label="Position"
-            defaultValue={job?.position ?? ""}
+            value={formValues.position}
+            onChange={(e) => handleChange("position", e.target.value)}
             error={fieldErrors?.position}
             required
             placeholder="Senior Engineer"
@@ -136,14 +194,16 @@ export function JobForm({ job }: JobFormProps) {
           <FieldGroup
             name="location"
             label="Location"
-            defaultValue={job?.location ?? ""}
+            value={formValues.location}
+            onChange={(e) => handleChange("location", e.target.value)}
             error={fieldErrors?.location}
             placeholder="San Francisco, CA"
           />
           <FieldGroup
             name="salary"
             label="Salary"
-            defaultValue={job?.salary ?? ""}
+            value={formValues.salary}
+            onChange={(e) => handleChange("salary", e.target.value)}
             error={fieldErrors?.salary}
             placeholder="$180k"
           />
@@ -151,7 +211,8 @@ export function JobForm({ job }: JobFormProps) {
             name="jobUrl"
             label="Job URL"
             type="url"
-            defaultValue={job?.jobUrl ?? ""}
+            value={formValues.jobUrl}
+            onChange={(e) => handleChange("jobUrl", e.target.value)}
             error={fieldErrors?.jobUrl}
             placeholder="https://…"
             className="sm:col-span-2"
@@ -159,17 +220,20 @@ export function JobForm({ job }: JobFormProps) {
           <DateGroup
             name="appliedDate"
             label="Applied Date"
-            defaultValue={job?.appliedDate ? formatDate(job.appliedDate) : ""}
+            value={formValues.appliedDate}
+            onChange={(e) => handleChange("appliedDate", e.target.value)}
             error={fieldErrors?.appliedDate}
           />
           <StatusGroup
-            defaultValue={job?.status ?? JobStatus.APPLIED}
+            value={formValues.status}
+            onChange={(val) => handleChange("status", val)}
             error={fieldErrors?.status}
           />
           <FieldGroup
             name="recruiter"
             label="Recruiter"
-            defaultValue={job?.recruiter ?? ""}
+            value={formValues.recruiter}
+            onChange={(e) => handleChange("recruiter", e.target.value)}
             error={fieldErrors?.recruiter}
             placeholder="Jane Doe"
           />
@@ -177,7 +241,8 @@ export function JobForm({ job }: JobFormProps) {
         <FieldGroup
           name="notes"
           label="Notes"
-          defaultValue={job?.notes ?? ""}
+          value={formValues.notes}
+          onChange={(e) => handleChange("notes", e.target.value)}
           error={fieldErrors?.notes}
           placeholder="Anything worth remembering about this role…"
           textarea
@@ -203,7 +268,9 @@ export function JobForm({ job }: JobFormProps) {
 function FieldGroup({
   name,
   label,
+  value,
   defaultValue,
+  onChange,
   error,
   placeholder,
   type = "text",
@@ -214,7 +281,9 @@ function FieldGroup({
 }: {
   name: string;
   label: string;
+  value?: string;
   defaultValue?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   error?: string[];
   placeholder?: string;
   type?: string;
@@ -234,7 +303,9 @@ function FieldGroup({
         id={id}
         name={name}
         type={type}
-        defaultValue={defaultValue}
+        value={value}
+        defaultValue={value !== undefined ? undefined : defaultValue}
+        onChange={onChange}
         placeholder={placeholder}
         aria-invalid={!!error ? true : undefined}
         className={textarea ? "resize-none" : undefined}
@@ -250,12 +321,16 @@ function FieldGroup({
 function DateGroup({
   name,
   label,
+  value,
   defaultValue,
+  onChange,
   error,
 }: {
   name: string;
   label: string;
-  defaultValue: string;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string[];
 }) {
   return (
@@ -265,7 +340,9 @@ function DateGroup({
         id={name}
         name={name}
         type="date"
-        defaultValue={defaultValue}
+        value={value}
+        defaultValue={value !== undefined ? undefined : defaultValue}
+        onChange={onChange}
         aria-invalid={!!error ? true : undefined}
         className="font-mono text-sm"
       />
@@ -277,16 +354,20 @@ function DateGroup({
 }
 
 function StatusGroup({
+  value,
   defaultValue,
+  onChange,
   error,
 }: {
-  defaultValue: JobStatus;
+  value?: JobStatus;
+  defaultValue?: JobStatus;
+  onChange?: (value: JobStatus) => void;
   error?: string[];
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <Label className="text-text-dim">Status</Label>
-      <Select name="status" defaultValue={defaultValue}>
+      <Select name="status" value={value} defaultValue={defaultValue} onValueChange={onChange}>
         <SelectTrigger>
           <SelectValue />
         </SelectTrigger>

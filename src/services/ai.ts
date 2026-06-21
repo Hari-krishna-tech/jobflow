@@ -108,3 +108,98 @@ Rules:
     throw new Error(`Invalid JSON or schema from AI: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
   }
 }
+
+// Zod schema matching the required structured JSON output from the job parser
+export const jobParsingSchema = z.object({
+  company: z.string().default(""),
+  position: z.string().default(""),
+  location: z.string().nullable().default(null),
+  salary: z.string().nullable().default(null),
+  recruiter: z.string().nullable().default(null),
+  notes: z.string().nullable().default(null),
+});
+
+export type ParsedJobDescription = z.infer<typeof jobParsingSchema>;
+
+/**
+ * Parses a raw job description using OpenRouter and the configured model.
+ * Returns a structured and validated job information object.
+ */
+export async function parseJobDescription(
+  description: string
+): Promise<ParsedJobDescription> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  const model = process.env.OPENROUTER_MODEL || "qwen/qwen3-8b";
+
+  if (!apiKey) {
+    throw new Error("OPENROUTER_API_KEY environment variable is not configured.");
+  }
+
+  // Truncate inputs to maintain a safe token limit
+  const truncatedDescription = description.slice(0, 8000);
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": "http://localhost:3000",
+      "X-Title": "JobFlow",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: "system",
+          content: `You analyze job descriptions for a personal job-application tracker.
+Analyze the job description and return JSON only. Do NOT wrap the response in markdown code blocks (e.g. do not use \`\`\`json).
+
+Return exactly this JSON structure:
+{
+  "company": "Company Name", // The name of the company hiring. Empty string if not found.
+  "position": "Job Title", // The title of the job / role. Empty string if not found.
+  "location": "Location", // Location of the job (e.g. Remote, San Francisco, CA, Hybrid). Null if not found.
+  "salary": "Salary", // Salary range or compensation details if mentioned (e.g., $120k - $150k). Null if not found.
+  "recruiter": "Recruiter Name", // Name of the recruiter or contact person if mentioned. Null if not found.
+  "notes": "A brief summary of the key responsibilities, requirements, and tech stack." // Extracted summary, requirements or notes. Null if not found.
+}
+
+Rules:
+- Keep the company and position values short and clean (e.g. "Stripe" instead of "Stripe, Inc. - Payments & Financial Infrastructure").
+- For notes, summarize the top 3-5 key points or bullet points of the job. Keep it under 500 characters.`,
+        },
+        {
+          role: "user",
+          content: truncatedDescription,
+        },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenRouter API error (status ${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+  const rawContent = data.choices?.[0]?.message?.content;
+
+  if (!rawContent) {
+    throw new Error("Empty response from OpenRouter");
+  }
+
+  // Handle cases where the LLM might wrap the JSON output in markdown backticks anyway
+  let cleanedContent = rawContent.trim();
+  if (cleanedContent.startsWith("```")) {
+    cleanedContent = cleanedContent.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+  }
+
+  try {
+    const parsed = JSON.parse(cleanedContent);
+    return jobParsingSchema.parse(parsed);
+  } catch (parseError) {
+    console.error("Failed to parse AI job description parsing content:", cleanedContent);
+    throw new Error(`Invalid JSON or schema from AI: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+  }
+}

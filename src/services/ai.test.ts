@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { classifyEmail } from "./ai";
+import { classifyEmail, parseJobDescription } from "./ai";
 import { JobStatus } from "@prisma/client";
 
 describe("ai service", () => {
@@ -132,5 +132,106 @@ describe("ai service", () => {
     await expect(
       classifyEmail("Interview Invitation", "Please choose a time slot", "recruiter@stripe.com")
     ).rejects.toThrow("Invalid JSON or schema from AI");
+  });
+
+  describe("parseJobDescription", () => {
+    it("should successfully parse job description with standard response", async () => {
+      const mockApiResponse = {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                company: "Stripe",
+                position: "Senior Frontend Engineer",
+                location: "Remote",
+                salary: "$150k - $180k",
+                recruiter: "Jane Doe",
+                notes: "Top 3 requirements: React, TypeScript, Next.js",
+              }),
+            },
+          },
+        ],
+      };
+
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => mockApiResponse,
+      } as any);
+
+      const result = await parseJobDescription("We are looking for a Senior Frontend Engineer at Stripe...");
+
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({
+        company: "Stripe",
+        position: "Senior Frontend Engineer",
+        location: "Remote",
+        salary: "$150k - $180k",
+        recruiter: "Jane Doe",
+        notes: "Top 3 requirements: React, TypeScript, Next.js",
+      });
+    });
+
+    it("should successfully parse and strip markdown backticks if returned by LLM", async () => {
+      const mockApiResponse = {
+        choices: [
+          {
+            message: {
+              content: "```json\n" + JSON.stringify({
+                company: "Vercel",
+                position: "Product Engineer",
+                location: null,
+                salary: null,
+                recruiter: null,
+                notes: null,
+              }) + "\n```",
+            },
+          },
+        ],
+      };
+
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => mockApiResponse,
+      } as any);
+
+      const result = await parseJobDescription("Product Engineer at Vercel...");
+      expect(result.company).toBe("Vercel");
+      expect(result.position).toBe("Product Engineer");
+    });
+
+    it("should throw error if fetch response is not ok", async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () => "Bad Request",
+      } as any);
+
+      await expect(
+        parseJobDescription("Some JD text")
+      ).rejects.toThrow("OpenRouter API error (status 400): Bad Request");
+    });
+
+    it("should throw error if LLM returns invalid JSON schema", async () => {
+      const mockApiResponse = {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                company: 123, // should be string
+              }),
+            },
+          },
+        ],
+      };
+
+      vi.mocked(globalThis.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => mockApiResponse,
+      } as any);
+
+      await expect(
+        parseJobDescription("Some JD text")
+      ).rejects.toThrow("Invalid JSON or schema from AI");
+    });
   });
 });

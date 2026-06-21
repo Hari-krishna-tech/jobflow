@@ -1,0 +1,18 @@
+{
+  "name": "JobFlow",
+  "short_name": "JobFlow",
+  "description": "AI-Assisted Job Application Tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}
