@@ -54,7 +54,7 @@ export function JobStatusSelect({ jobId, currentStatus }: JobStatusSelectProps) 
             </div>
           )}
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position="popper">
           {Object.values(JobStatus).map((status) => (
             <SelectItem key={status} value={status} className="cursor-pointer">
               <div className="py-0.5">
