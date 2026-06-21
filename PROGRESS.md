@@ -66,7 +66,7 @@
 | 4.3 | Error boundaries + global error UI | ✅ | Added dashboard-level and root-level global error boundaries |
 | 4.4 | Dark mode polish | ✅ | Refined globals.css with custom selection colors and scrollbars |
 | 4.5 | Deploy to Vercel + Neon prod DB | ✅ | Documented variables, migrations, and Neon setup instructions in DEPLOYMENT.md |
-| 4.6 | Vercel Cron for scheduled sync | ✅ | Created vercel.json cron config to run sync route every 1 hour |
+| 4.6 | Vercel Cron for scheduled sync | ✅ | Created vercel.json cron config to run sync route once per day |
 
 ---
 
