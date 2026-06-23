@@ -230,3 +230,183 @@ export async function syncGmail(userId: string): Promise<SyncResult> {
     return { success: false, count: 0, error: errorMessage };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Streaming sync (SSE-compatible async generator)
+// ---------------------------------------------------------------------------
+
+export type SyncStreamEvent =
+  | { type: "progress"; current: number; total: number }
+  | {
+      type: "email";
+      current: number;
+      total: number;
+      email: {
+        id: string;
+        subject: string;
+        fromEmail: string;
+        receivedAt: string;
+        jobId: string | null;
+        summary: string | null;
+        detectedStatus: JobStatus | null;
+      };
+    }
+  | { type: "skip"; current: number; total: number; gmailMessageId: string }
+  | { type: "error"; current: number; total: number; gmailMessageId: string; error: string }
+  | { type: "complete"; savedCount: number; skippedCount: number; errorCount: number; totalFetched: number };
+
+/**
+ * Streaming variant of syncGmail that yields progress events per email.
+ * Used by the SSE endpoint so the frontend can update in real-time.
+ * The non-streaming `syncGmail()` is preserved for Vercel Cron usage.
+ */
+export async function* syncGmailStreaming(userId: string): AsyncGenerator<SyncStreamEvent> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { last_sync_at: true, refresh_token: true },
+  });
+
+  if (!user) {
+    yield { type: "error", current: 0, total: 0, gmailMessageId: "", error: "User not found" };
+    return;
+  }
+
+  if (!user.refresh_token) {
+    yield { type: "error", current: 0, total: 0, gmailMessageId: "", error: "Gmail account not connected" };
+    return;
+  }
+
+  // 1. Fetch recent messages from Gmail API
+  const messages = await fetchRecentMessages(userId, user.last_sync_at);
+  const total = messages.length;
+
+  // Emit initial progress so the UI knows the total count
+  yield { type: "progress", current: 0, total };
+
+  let savedCount = 0;
+  let skippedCount = 0;
+  let errorCount = 0;
+
+  // 2. Iterate and persist messages, yielding after each
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    const current = i + 1;
+
+    // Check if message already exists
+    const existingEmail = await prisma.email.findUnique({
+      where: { gmailMessageId: msg.id },
+      select: { id: true },
+    });
+
+    if (existingEmail) {
+      skippedCount++;
+      yield { type: "skip", current, total, gmailMessageId: msg.id };
+      continue;
+    }
+
+    const fromEmailParsed = parseFromEmail(msg.from);
+
+    // Classify the email using OpenRouter AI (fail-safe)
+    let classification = null;
+    try {
+      classification = await classifyEmail(msg.subject, msg.body, fromEmailParsed);
+    } catch (aiError) {
+      console.error(`AI classification failed for message ${msg.id}:`, aiError);
+      errorCount++;
+
+      // Still save the email without classification
+      const createdEmail = await prisma.email.create({
+        data: {
+          userId,
+          gmailMessageId: msg.id,
+          subject: msg.subject,
+          fromEmail: fromEmailParsed,
+          receivedAt: msg.date,
+          summary: null,
+          actionRequired: null,
+          actionDueDate: null,
+          detectedStatus: null,
+          jobId: null,
+        },
+      });
+
+      savedCount++;
+      yield {
+        type: "email",
+        current,
+        total,
+        email: {
+          id: createdEmail.id,
+          subject: msg.subject,
+          fromEmail: fromEmailParsed,
+          receivedAt: msg.date.toISOString(),
+          jobId: null,
+          summary: null,
+          detectedStatus: null,
+        },
+      };
+      continue;
+    }
+
+    // Fuzzy match job if classification succeeded and is job-related
+    let matchedJobId: string | null = null;
+    if (classification?.job_related && classification.company) {
+      const matchedJob = await fuzzyMatchJob(userId, classification.company);
+      if (matchedJob) {
+        matchedJobId = matchedJob.id;
+      }
+    }
+
+    // Create the Email record
+    const createdEmail = await prisma.email.create({
+      data: {
+        userId,
+        gmailMessageId: msg.id,
+        subject: msg.subject,
+        fromEmail: fromEmailParsed,
+        receivedAt: msg.date,
+        summary: classification?.summary || null,
+        actionRequired: classification?.action_required || null,
+        actionDueDate: classification?.due_date ? new Date(classification.due_date) : null,
+        detectedStatus: classification?.status || null,
+        jobId: matchedJobId,
+      },
+    });
+
+    // Trigger job status update and task generation if matched
+    if (matchedJobId && classification) {
+      await handleJobUpdateFromEmail({
+        userId,
+        jobId: matchedJobId,
+        detectedStatus: classification.status,
+        actionRequired: classification.action_required,
+        actionDueDate: classification.due_date,
+        emailSubject: msg.subject,
+      });
+    }
+
+    savedCount++;
+    yield {
+      type: "email",
+      current,
+      total,
+      email: {
+        id: createdEmail.id,
+        subject: msg.subject,
+        fromEmail: fromEmailParsed,
+        receivedAt: msg.date.toISOString(),
+        jobId: matchedJobId,
+        summary: classification?.summary || null,
+        detectedStatus: classification?.status || null,
+      },
+    };
+  }
+
+  // 3. Update the last_sync_at timestamp to now
+  await prisma.user.update({
+    where: { id: userId },
+    data: { last_sync_at: new Date() },
+  });
+
+  yield { type: "complete", savedCount, skippedCount, errorCount, totalFetched: total };
+}

@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useTransition, useState } from "react";
+import { useTransition, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Mail, RefreshCw, Unlink, Link2, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Mail, RefreshCw, Unlink, Link2, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/card";
@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/empty-state";
 import {
-  syncGmailAction,
   disconnectGmailAction,
   linkEmailToJobAction,
 } from "@/lib/actions/gmail";
@@ -40,6 +39,13 @@ interface EmailData {
   jobId: string | null;
   summary: string | null;
   detectedStatus: JobStatus | null;
+}
+
+interface SyncProgress {
+  current: number;
+  total: number;
+  latestEmail: string | null;
+  savedCount: number;
 }
 
 interface JobData {
@@ -77,12 +83,14 @@ export function GmailSyncClient({
   unmatchedPage,
   pageSize,
 }: GmailSyncClientProps) {
-  const [isSyncing, startSync] = useTransition();
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isDisconnecting, startDisconnect] = useTransition();
   const [isLinking, startLinking] = useTransition();
 
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
   const [linkEmailId, setLinkEmailId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
+  const abortRef = useRef<AbortController | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -93,16 +101,103 @@ export function GmailSyncClient({
     router.push(`/gmail?${params.toString()}`);
   };
 
-  const handleSync = () => {
-    startSync(async () => {
-      const res = await syncGmailAction();
-      if (res.success) {
-        toast.success(res.message);
-      } else {
-        toast.error(res.message);
+  const handleSync = useCallback(async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    setSyncProgress({ current: 0, total: 0, latestEmail: null, savedCount: 0 });
+
+    const abortController = new AbortController();
+    abortRef.current = abortController;
+
+    try {
+      const response = await fetch("/api/gmail/sync/stream", {
+        method: "POST",
+        signal: abortController.signal,
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: "Sync failed" }));
+        toast.error(err.error || "Sync failed");
+        setIsSyncing(false);
+        setSyncProgress(null);
+        return;
       }
-    });
-  };
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        toast.error("Failed to read sync stream");
+        setIsSyncing(false);
+        setSyncProgress(null);
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        // Keep the last potentially incomplete line in the buffer
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6);
+          if (!jsonStr.trim()) continue;
+
+          try {
+            const event = JSON.parse(jsonStr);
+
+            if (event.type === "progress") {
+              setSyncProgress((prev) => ({
+                ...prev!,
+                total: event.total,
+                current: 0,
+                savedCount: 0,
+                latestEmail: null,
+              }));
+            } else if (event.type === "email") {
+              setSyncProgress((prev) => ({
+                current: event.current,
+                total: event.total,
+                latestEmail: event.email.fromEmail,
+                savedCount: (prev?.savedCount ?? 0) + 1,
+              }));
+            } else if (event.type === "skip") {
+              setSyncProgress((prev) => ({
+                ...prev!,
+                current: event.current,
+                total: event.total,
+              }));
+            } else if (event.type === "error" && event.total === 0) {
+              // Fatal error before processing started
+              toast.error(event.error || "Sync error");
+            } else if (event.type === "complete") {
+              const matched = event.savedCount - event.errorCount;
+              toast.success(
+                `Sync complete — ${event.savedCount} email(s) imported${event.skippedCount > 0 ? `, ${event.skippedCount} skipped` : ""}`
+              );
+            }
+          } catch {
+            // Ignore malformed SSE lines
+          }
+        }
+      }
+
+      // Revalidate server data now that sync is complete
+      router.refresh();
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      toast.error("Sync connection failed. Please try again.");
+    } finally {
+      setIsSyncing(false);
+      setSyncProgress(null);
+      abortRef.current = null;
+    }
+  }, [isSyncing, router]);
 
   const handleDisconnect = () => {
     if (confirm("Are you sure you want to disconnect Gmail? Your credentials will be removed from our servers.")) {
@@ -217,6 +312,48 @@ export function GmailSyncClient({
           </div>
         </CardContent>
       </Card>
+
+      {/* Sync Progress Panel — only visible during active sync */}
+      {syncProgress && (
+        <Card className="border-accent/30 bg-accent/5 overflow-hidden">
+          <CardContent className="py-5 px-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Loader2 className="size-4 text-accent animate-spin" />
+                <span className="text-sm font-semibold text-text">
+                  {syncProgress.total === 0
+                    ? "Fetching emails from Gmail..."
+                    : `Processing ${syncProgress.current} of ${syncProgress.total} email(s)…`}
+                </span>
+              </div>
+              {syncProgress.savedCount > 0 && (
+                <span className="font-mono text-xs text-accent">
+                  {syncProgress.savedCount} imported
+                </span>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            {syncProgress.total > 0 && (
+              <div className="relative h-1.5 w-full rounded-full bg-border/40 overflow-hidden">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-accent transition-all duration-300 ease-out"
+                  style={{
+                    width: `${Math.round((syncProgress.current / syncProgress.total) * 100)}%`,
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Current email being processed */}
+            {syncProgress.latestEmail && (
+              <p className="text-xs text-text-dim truncate">
+                Latest: <span className="font-mono text-text-faint">{syncProgress.latestEmail}</span>
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* 2. Unmatched Queue Section */}
       <div>

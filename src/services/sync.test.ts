@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { parseFromEmail, fuzzyMatchJob, syncGmail } from "./sync";
+import { parseFromEmail, fuzzyMatchJob, syncGmail, syncGmailStreaming } from "./sync";
 import { prisma } from "@/lib/db";
 import { fetchRecentMessages } from "./gmail";
 import { classifyEmail } from "./ai";
@@ -173,6 +173,125 @@ describe("sync service", () => {
         where: { id: "user1" },
         data: { last_sync_at: expect.any(Date) },
       });
+    });
+  });
+
+  describe("syncGmailStreaming", () => {
+    /** Helper to collect all events from the async generator. */
+    async function collectEvents(userId: string) {
+      const events = [];
+      for await (const event of syncGmailStreaming(userId)) {
+        events.push(event);
+      }
+      return events;
+    }
+
+    it("should yield an error event when user has no refresh token", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: "user1",
+        refresh_token: null,
+      } as any);
+
+      const events = await collectEvents("user1");
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({
+        type: "error",
+        error: "Gmail account not connected",
+      });
+    });
+
+    it("should yield progress → email → complete events for a new email", async () => {
+      // Mock user info
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: "user1",
+        refresh_token: "some-token",
+        last_sync_at: new Date("2026-06-20T00:00:00Z"),
+      } as any);
+
+      // Mock one message from Gmail
+      const mockMsg = {
+        id: "msg-stream-1",
+        subject: "Interview at Stripe",
+        from: "Stripe <hiring@stripe.com>",
+        date: new Date("2026-06-21T10:00:00Z"),
+        body: "We'd like to schedule an interview...",
+      };
+      vi.mocked(fetchRecentMessages).mockResolvedValue([mockMsg]);
+
+      // Email does not exist yet
+      vi.mocked(prisma.email.findUnique).mockResolvedValue(null);
+
+      // Mock classification
+      vi.mocked(classifyEmail).mockResolvedValue({
+        job_related: true,
+        company: "Stripe",
+        status: JobStatus.INTERVIEW,
+        action_required: "Schedule interview",
+        due_date: "2026-06-25",
+        summary: "Interview invitation from Stripe.",
+      });
+
+      // Mock fuzzy match
+      const mockJob = { id: "stripe-job", company: "Stripe, LLC" };
+      vi.mocked(prisma.job.findMany).mockResolvedValue([mockJob] as any);
+
+      // Mock email creation
+      vi.mocked(prisma.email.create).mockResolvedValue({
+        id: "email-db-1",
+        subject: "Interview at Stripe",
+        fromEmail: "hiring@stripe.com",
+        receivedAt: new Date("2026-06-21T10:00:00Z"),
+        jobId: "stripe-job",
+      } as any);
+
+      // Mock task duplicate check
+      vi.mocked(prisma.task.findFirst).mockResolvedValue(null);
+
+      const events = await collectEvents("user1");
+
+      // Expect: progress(0/1) → email(1/1) → complete
+      expect(events).toHaveLength(3);
+
+      expect(events[0]).toMatchObject({ type: "progress", current: 0, total: 1 });
+      expect(events[1]).toMatchObject({
+        type: "email",
+        current: 1,
+        total: 1,
+        email: expect.objectContaining({
+          id: "email-db-1",
+          fromEmail: "hiring@stripe.com",
+          subject: "Interview at Stripe",
+          detectedStatus: JobStatus.INTERVIEW,
+        }),
+      });
+      expect(events[2]).toMatchObject({
+        type: "complete",
+        savedCount: 1,
+        skippedCount: 0,
+        totalFetched: 1,
+      });
+    });
+
+    it("should yield skip events for duplicate emails", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: "user1",
+        refresh_token: "token",
+        last_sync_at: new Date(),
+      } as any);
+
+      vi.mocked(fetchRecentMessages).mockResolvedValue([
+        { id: "dup-1", subject: "Test", from: "a@b.com", date: new Date(), body: "" },
+      ]);
+
+      // Email already exists
+      vi.mocked(prisma.email.findUnique).mockResolvedValue({ id: "existing" } as any);
+
+      const events = await collectEvents("user1");
+
+      expect(events).toHaveLength(3);
+      expect(events[0]).toMatchObject({ type: "progress", current: 0, total: 1 });
+      expect(events[1]).toMatchObject({ type: "skip", current: 1, total: 1, gmailMessageId: "dup-1" });
+      expect(events[2]).toMatchObject({ type: "complete", savedCount: 0, skippedCount: 1 });
     });
   });
 });
