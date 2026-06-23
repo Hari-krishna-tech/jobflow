@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { syncGmailStreaming } from "@/services/sync";
 import { isRateLimited } from "@/lib/rate-limit";
@@ -35,6 +36,9 @@ export async function POST(request: NextRequest) {
           const data = `data: ${JSON.stringify(event)}\n\n`;
           controller.enqueue(encoder.encode(data));
         }
+        // Bust the Next.js data cache so server components pick up new data
+        revalidatePath("/gmail");
+        revalidatePath("/");
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : "Unknown sync error";
         const errorEvent = `data: ${JSON.stringify({
